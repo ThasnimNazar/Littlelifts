@@ -1,0 +1,65 @@
+/* Fullcalendar.css */
+
+.custom-calendar-container {
+    width: 30%; /* Adjust width as needed */
+    max-width: 300px; /* Adjust max-width as needed */
+    height: 300px; /* Adjust height as needed */
+    overflow: hidden; /* Hide scrollbars */
+}
+
+/* Hide scrollbars for WebKit browsers */
+.custom-calendar-container ::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbars for IE, Edge, and Firefox */
+.custom-calendar-container {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+.fc {
+    font-size: 10px; /* Adjust font size for calendar content */
+}
+
+.fc-toolbar {
+    font-size: 12px; /* Adjust font size for toolbar */
+}
+
+.fc-daygrid-event {
+    padding: 2px; /* Adjust padding for events */
+}
+
+/* Custom styles for FullCalendar buttons */
+.fc .fc-button {
+    background-color: black; /* Background color for buttons */
+    border-color: black; /* Border color for buttons */
+    color: white; /* Text color for buttons */
+}
+
+.fc .fc-button:hover {
+    background-color: black; /* Background color for buttons on hover */
+    border-color: black; /* Border color for buttons on hover */
+}
+
+.fc .fc-button:active {
+    background-color: #fef08a; /* Background color for buttons on active */
+    border-color: #fef08a; /* Border color for buttons on active */
+}
+
+/* Specific styles for the month button */
+.fc .fc-dayGridMonth-button {
+    background-color: #fef08a; /* Background color for month button */
+    border-color: #fef08a; /* Border color for month button */
+    color: white; /* Text color for month button */
+}
+
+.fc .fc-dayGridMonth-button:hover {
+    background-color: #fef08a; /* Background color for month button on hover */
+    border-color: #fef08a; /* Border color for month button on hover */
+}
+
+.fc .fc-dayGridMonth-button:active {
+    background-color: #fef08a; /* Background color for month button on active */
+    border-color: #fef08a; /* Border color for month button on active */
+}

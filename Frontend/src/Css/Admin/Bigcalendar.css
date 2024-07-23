@@ -1,0 +1,32 @@
+/* custom-calendar.css */
+
+.rbc-calendar {
+    font-family: Arial, sans-serif;
+  }
+  
+  .rbc-month-view {
+    background-color: #f9f9f9;
+  }
+  
+  .rbc-header {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .rbc-event {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .rbc-event:hover {
+    background-color: #218838;
+  }
+  
+  .rbc-selected {
+    border: 2px solid #007bff;
+  }
+  
+  .rbc-day-bg {
+    background-color: #ffffff;
+  }
+  

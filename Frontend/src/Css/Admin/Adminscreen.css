@@ -1,0 +1,20 @@
+.admin-screen-container {
+    display: flex;
+    height: 100vh; 
+  }
+  
+  .admin-screen-container > div {
+    padding: 20px; 
+  }
+  
+  .admin-screen-container .sidebar {
+    width: 250px; 
+    background-color: #f8f9fa; 
+  }
+  
+  .admin-screen-container .admin-content {
+    flex: 1; 
+    background-color: #ffffff; 
+    overflow-y: auto; 
+  }
+  
