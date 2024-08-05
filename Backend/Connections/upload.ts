@@ -35,4 +35,12 @@ const upload = multer({
 
 export const uploadSingle = upload.single('profileImage');
 export const uploadSingleImage = upload.single('image');
+export const uploadChatImage = upload.single('ImageUrl');
+export const uploadVideo = upload.single('VideoUrl');
 export const uploadMultiple = upload.array('verificationDocuments', 10); 
+
+export const uploadFields = upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+    { name: 'audio', maxCount: 1 },
+]);

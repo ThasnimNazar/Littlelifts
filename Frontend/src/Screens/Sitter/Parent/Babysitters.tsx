@@ -49,12 +49,36 @@ const Babysitters: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState([]);
 
+  const [parentLocation, setParentLocation] = useState<{ lat: number, lng: number } | null>(null);
+
 
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const toast = useToast();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setParentLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      (error) => {
+        console.error('Error fetching location:', error);
+        toast({
+          title: 'Location Error',
+          description: 'Unable to fetch your location. Please allow location access.',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+          position: 'top-right',
+        });
+      }
+    );
+  }, []);
 
 
 
@@ -63,27 +87,39 @@ const Babysitters: React.FC = () => {
     setSearchQuery(event.target.value);
   };
 
+  console.log(parentLocation?.lat)
+  console.log(parentLocation?.lng)
+
 
 
   useEffect(() => {
     const fetchBabysitters = async () => {
-      try {
-        const response = await axios.get('/api/parent/getsitter', {
-          params: {
-            page: currentPage,
-            limit: itemsPerPage,
-          },
-        });
-        console.log(response)
-        setBabysitters(response.data.sitters);
-        setFilteredBabysitters(response.data.sitters);
-      } catch (error) {
-        handleAxiosError(error);
+      if (parentLocation?.lat && parentLocation?.lng) {
+        try {
+          console.log("Parent location:", parentLocation);
+          const response = await axios.get('/api/parent/getsitter', {
+            params: {
+              lat: parentLocation.lat,
+              lng: parentLocation.lng,
+              radius: 25, 
+              page: currentPage,
+              limit: itemsPerPage,
+            },
+          });
+          console.log("Response:", response); 
+          setBabysitters(response.data.sitters);
+          setFilteredBabysitters(response.data.sitters);
+        } catch (error) {
+          handleAxiosError(error);
+        }
+      } else {
+        console.error("Parent location is not defined or incomplete"); 
       }
     };
-
+  
     fetchBabysitters();
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, parentLocation]);
+  
 
   const handlePageChange = (newPage) => {
     console.log('Page change requested to:', newPage);

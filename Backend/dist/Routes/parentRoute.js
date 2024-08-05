@@ -28,5 +28,12 @@ parentroute.get('/get-availabledates/:sitterId', authMiddleware_1.protectParent,
 parentroute.get('/get-slots/:sitterId', authMiddleware_1.protectParent, parentController_1.getSlots);
 parentroute.post('/checkout-session/:sitterId', authMiddleware_1.protectParent, bookingController_1.confirmBooking);
 parentroute.get('/bookings/:parentId', authMiddleware_1.protectParent, parentController_1.bookingsParent);
+parentroute.get('/booked-sitters/:parentId', authMiddleware_1.protectParent, bookingController_1.getBookedsitters);
+parentroute.post('/createchat', authMiddleware_1.protectParent, parentController_1.createChat);
+parentroute.get('/get-messages/:chatId', authMiddleware_1.protectParent, parentController_1.getMessages);
+parentroute.post('/send-message', authMiddleware_1.protectParent, parentController_1.sendMessage);
+parentroute.post('/mark-seen', authMiddleware_1.protectParent, parentController_1.markSeen);
+parentroute.post('/post-review', authMiddleware_1.protectParent, parentController_1.postReview);
+parentroute.get('/check-block', authMiddleware_1.protectParent, parentController_1.isBlocked);
 parentroute.post('/getnames', authMiddleware_1.protectParent, parentController_1.getName);
 exports.default = parentroute;

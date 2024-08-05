@@ -101,6 +101,7 @@ const DocumentVerification: React.FC = () => {
             'Content-Type': 'multipart/form-data'
           }
         });
+        console.log(response,'loo')
         setSuccess("Documents uploaded successfully.");
         setPreviewSrcs([]); 
         setFileInputKey(prevKey => prevKey + 1); 

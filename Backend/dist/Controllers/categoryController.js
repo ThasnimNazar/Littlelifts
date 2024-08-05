@@ -282,6 +282,7 @@ const getName = ((req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(404).json({ message: 'Categories not found' });
         }
         const names = childcategories.map(category => category.name);
+        console.log(names, 'nn');
         res.status(200).json({ names });
     }
     catch (error) {

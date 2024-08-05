@@ -1,14 +1,14 @@
 import asyncHandler from 'express-async-handler';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
-import mongoose, { Types,Document } from 'mongoose';
+import mongoose, { Types, Document } from 'mongoose';
 import { promisify } from 'util';
 import Parent, { ParentModel, ParentDocument } from '../Models/parentModel';
 import parentOtp from '../Models/parentotpModel';
 import generateParentToken from '../Utils/generateParentToken';
 import Sitter from '../Models/sitterModel';
 import sendOTP from '../Helper/otpHelper';
-import { uploadSingle } from '../Connections/upload'
+import { uploadSingle,uploadChatImage,uploadVideo,uploadFields } from '../Connections/upload'
 import WeekendSitting from '../Models/weekendsittingModel';
 import OccasionalSitting from '../Models/occasionalsittingModel';
 import SpecialCareSitting from '../Models/specialcareModel';
@@ -16,9 +16,14 @@ import Childcategory from '../Models/childcategoryModel';
 import Booking from '../Models/bookingModel'
 import { weekendSitting } from '../Models/weekendsittingModel';
 import { occasionalSitting } from '../Models/occasionalsittingModel'
-import {  AvailabelDates,TimeSlot,specialcareSitting } from '../Models/specialcareModel'
+import { AvailabelDates, TimeSlot, specialcareSitting } from '../Models/specialcareModel'
+import Chat from '../Models/chatModel'
+import Message from '../Models/messageModel'
+import  Review from '../Models/reviewModel'
+import { getSocketIOInstance } from '../Connections/socket'
 
 const uploadSinglePromise = promisify(uploadSingle);
+const uploadChatPromise = promisify(uploadChatImage);
 
 
 interface ParentData {
@@ -74,6 +79,19 @@ interface PasswordBody {
 interface CustomRequest<T = {}> extends Request {
     parent?: ParentDocument;
     body: T;
+}
+
+interface ChatRequest {
+    parentId: string;
+    sitterId: string;
+}
+
+interface MessageBody{
+    chatId : string;
+    senderId : string;
+    content : string;
+    timestamp:string;
+    imageUrl:string
 }
 
 
@@ -255,6 +273,11 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
             return;
         }
 
+        if(parentExists.blocked){
+            res.status(401).json({message:'your account is blocked'})
+            return;
+        }
+
         const passwordMatch = await bcrypt.compare(password, parentExists.password);
 
         if (!passwordMatch) {
@@ -275,26 +298,65 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
 
 const listSitter = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     try {
+        console.log('Received request for listing sitters');
+
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 10;
         const skip = (page - 1) * limit;
+        const lat = req.query.lat;
+        const lng = req.query.lng;
+        const radius = req.query.radius;
 
-        const babysitters = await Sitter.find()
-            .skip((page - 1) * limit)
-            .limit(limit);
-
-        res.status(200).json({ sitters: babysitters });
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message });
-            return;
-        } else {
-            res.status(500).json({ message: 'An unknown error occurred' });
+        if (!lat || !lng || !radius) {
+            res.status(400).json({ message: 'Latitude, longitude, and radius are required.' });
             return;
         }
+
+        const latitude = parseFloat(lat as string);
+        const longitude = parseFloat(lng as string);
+        const radiusInKm = parseFloat(radius as string);
+
+        if (radiusInKm <= 0) {
+            res.status(400).json({ message: 'Radius must be a positive number.' });
+            return;
+        }
+
+        const radiusInRadians = radiusInKm / 6371; // Convert radius to radians
+
+        console.log('Latitude:', latitude);
+        console.log('Longitude:', longitude);
+        console.log('Radius in km:', radiusInKm);
+        console.log('Radius in radians:', radiusInRadians);
+
+        const query = {
+            location: {
+                $geoWithin: {
+                    $centerSphere: [
+                        [longitude, latitude],
+                        radiusInRadians
+                    ]
+                }
+            },
+            blocked: false
+        };
+
+        console.log('Query:', JSON.stringify(query));
+
+        const babysitters = await Sitter.find(query);
+
+        console.log('Babysitters found:', babysitters);
+
+        const total = await Sitter.countDocuments(query);
+        console.log('Total sitters found:', total);
+
+        res.status(200).json({ sitters: babysitters, total });
+    } catch (error) {
+        console.error('Error while listing sitters:', error);
+        res.status(500).json({ message: 'An unknown error occurred' });   
     }
 });
+
+
 
 
 const getProfile = asyncHandler(async (req: Request<{ parentId: string }, {}>, res: Response): Promise<void> => {
@@ -686,7 +748,7 @@ const getSlots = async (req: Request<{ sitterId: string }>, res: Response) => {
         }
 
         const formattedSlots = slots.map(slot => {
-            const slotObject = slot.toObject(); 
+            const slotObject = slot.toObject();
             return {
                 ...slotObject,
                 availableDates: (slotObject.availableDates as AvailabelDates[]).map(dateSlot => ({
@@ -753,11 +815,200 @@ const bookingsParent = asyncHandler(async (req: Request<{ parentId: string }>, r
     }
 });
 
+const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: Response) => {
+    try {
+        const { parentId, sitterId } = req.body;
+        let chat = await Chat.findOne({
+            participants: { $all: [parentId, sitterId] }
+        });
+
+        if (!chat) {
+            chat = new Chat({
+                participants: [parentId, sitterId],
+                messages: []
+            });
+            await chat.save();
+        }
+
+        res.status(201).json(chat);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+
+const sendMessage = asyncHandler(async(req:Request<{},{},MessageBody>,res:Response)=>{
+    try{
+        await new Promise<void>((resolve, reject) => {
+            uploadFields(req, res, (err: any) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+          
+        const { chatId, senderId, content, timestamp } = req.body;
+        console.log(req.body,'jj')
+        const imageUrl = req.files && (req.files as any).image ? (req.files as any).image[0].location : '';
+        const videoUrl = req.files && (req.files as any).video ? (req.files as any).video[0].location : '';
+        const audioUrl = req.files && (req.files as any).audio ? (req.files as any).audio[0].location : '';
+
+        
+
+        const message = new Message({
+            chat:chatId,
+            sender:senderId,
+            content:content,
+            timestamp: new Date(timestamp),
+            ImageUrl: imageUrl || '',
+            VideoUrl: videoUrl || '',
+            AudioUrl: audioUrl || '',
+          });
+      
+          await message.save();
+          console.log(message,'msg')
+      
+          await Chat.findByIdAndUpdate(
+            chatId,
+            { $push: { messages: message._id } },
+            { new: true }
+          );
+        res.status(200).json({message})
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getMessages = asyncHandler(async(req:Request<{chatId:string}>,res:Response)=>{
+    try{
+      const { chatId } = req.params;
+      const messages = await Message.find({ chat:chatId }).sort({ timestamp: 1 });
+      console.log(messages,'mes')   
+      res.status(200).json({messages});
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const markSeen = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+        const { chatId, userId } = req.body;
+
+        const io = getSocketIOInstance();
+        await Message.updateMany(
+            { chat: chatId, seenBy: { $ne: userId } },
+            { $push: { seenBy: userId } }
+          );
+      
+          res.status(200).json({ message: 'Messages marked as seen' });
+      
+          io.to(chatId).emit('messagesMarkedSeen', { userId });
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const postReview = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+     const { review, rating, bookingId } = req.body;
+     console.log(req.body)
+
+     const bookings = await Booking.findById( bookingId ).populate('sitter parent');
+     if(!bookings){
+        res.status(404).json({message:'booking not found'})
+        return;
+     }
+
+     const newReview = new Review({
+        booking : bookingId,
+        sitter:bookings.sitter._id,
+        parent:bookings.parent._id,
+        rating:rating,
+        comment:review
+     })
+
+     await newReview.save();
+
+     bookings.reviewSubmitted = true;
+     await bookings.save();
+     
+     res.status(200).json({newReview})
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const isBlocked = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+       const { parentId } = req.query;
+       const parent = await Parent.findById({ _id:parentId}) 
+       if(!parent){
+        res.status(404).json({message:'parent not found'})   
+        return;
+       }
+
+       if(parent.blocked)
+       {
+        res.status(200).json({parent,message:'You are blocked'})
+        return;
+
+       }       
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
 
 
 
 export {
     registerParent, parentLogin, listSitter, getProfile, editProfile, parentLogout, verifyOtp, forgotPassword, parentpasswordOtp,
     resetparentPassword, resendOtp, searchBabysitters, filterBabysittersByDate, getAvailabledates, getName, getSlots,
-    bookingsParent
+    bookingsParent, createChat,sendMessage, getMessages,markSeen,postReview,isBlocked
 };

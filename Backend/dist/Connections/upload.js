@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadMultiple = exports.uploadSingleImage = exports.uploadSingle = void 0;
+exports.uploadFields = exports.uploadMultiple = exports.uploadVideo = exports.uploadChatImage = exports.uploadSingleImage = exports.uploadSingle = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
 //to interact with aws
 const multer_s3_1 = __importDefault(require("multer-s3"));
@@ -31,4 +31,11 @@ const upload = (0, multer_1.default)({
 //s3-created s3 instance,key-unique key for uploaded file
 exports.uploadSingle = upload.single('profileImage');
 exports.uploadSingleImage = upload.single('image');
+exports.uploadChatImage = upload.single('ImageUrl');
+exports.uploadVideo = upload.single('VideoUrl');
 exports.uploadMultiple = upload.array('verificationDocuments', 10);
+exports.uploadFields = upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+    { name: 'audio', maxCount: 1 },
+]);

@@ -4,11 +4,13 @@ import { sitterregisterStep1,sitterregisterStep2,sitterregisterStep3,
     uploadVerificationDocuments,getStatus,getsitterProfile,sitterverifyOtp,
     sitresendOtp,sitterforgotPassword,sitterpasswordOtp,
     resetsitterPassword,sitterLogin,editProfile,getSlots,getSittingcategory,geteditSlot,editSlot,
-    getBabysitter,editTimeslot,bookingsList
+    getBabysitter,editTimeslot,bookingsList,createChat,sendMessage,getMessages, checkBlocked
 } from '../Controllers/sitterController'
 
+import { markSeen } from '../Controllers/parentController'
+
 import { protectSitter } from '../Middleware/authMiddleware'
-import { bookingApproval,bookingRejection,handleStripeWebhook } from '../Controllers/bookingController'
+import { bookingApproval,bookingRejection,handleStripeWebhook,getBookedparents } from '../Controllers/bookingController'
 
 import { getAllchildCategory,getAllsittingCategory,getName } from '../Controllers/categoryController'
 
@@ -50,5 +52,14 @@ sitterroute.get('/bookings/:sitterId',protectSitter,bookingsList)
 sitterroute.post('/approve-booking/:bookingId',protectSitter,bookingApproval)
 sitterroute.post('/reject-booking/:bookingId',protectSitter,bookingRejection)
 sitterroute.post('/webhook',handleStripeWebhook)
+
+sitterroute.get('/booked-parents/:sitterId',protectSitter,getBookedparents)
+sitterroute.post('/createchat',protectSitter,createChat)
+sitterroute.get('/get-messages/:chatId',protectSitter,getMessages)
+sitterroute.post('/send-message',protectSitter,sendMessage)
+sitterroute.post('/mark-seen',protectSitter,markSeen)
+sitterroute.get('/check-block',protectSitter,checkBlocked)   
+
+
 
 export default sitterroute

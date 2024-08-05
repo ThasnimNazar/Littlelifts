@@ -28,6 +28,34 @@ const initializeSocketIO = (server: http.Server) => {
             console.log(`parent ${parentId} joined room with socket ID ${socket.id}`);
 
         })
+
+        socket.on('joinRoom', ({ roomId }) => {
+            socket.join(roomId); 
+            console.log(`User with socket ID ${socket.id} joined room ${roomId}`);
+          });
+
+        socket.on('sendMessage', (message) => {
+            console.log(message,'msg')
+            const { chat } = message;
+            io.to(chat).emit('receiveMessage', message);
+            console.log(`Message sent to room ${chat}:`, message);
+          });
+
+        socket.on('markSeen', ({ chatId, userId }) => {
+            io.to(chatId).emit('messagesMarkedSeen', { userId });
+        });
+
+        socket.on('offer', (data) => {
+            socket.to(data.roomId).emit('offer', data.offer);
+        });
+
+        socket.on('answer', (data) => {
+            socket.to(data.roomId).emit('answer', data.answer);
+        });
+
+        socket.on('candidate', (data) => {
+            socket.to(data.roomId).emit('candidate', data.candidate);
+        });
         
         socket.on('error', (err) => {
             console.error('Socket error:', err);

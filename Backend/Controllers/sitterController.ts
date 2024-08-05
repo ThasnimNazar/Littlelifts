@@ -14,11 +14,12 @@ import {
 } from '../Helper/slotHelper'
 import Booking from '../Models/bookingModel'
 
-import { uploadSingle, uploadMultiple } from '../Connections/upload'
-import RegularSitting from "../Models/regularsittingModel";
+import { uploadSingle, uploadMultiple, uploadChatImage, uploadFields } from '../Connections/upload'
 import WeekendSitting from "../Models/weekendsittingModel";
 import OccasionalSitting from "../Models/occasionalsittingModel";
 import SpecialCareSitting from "../Models/specialcareModel";
+import Chat from '../Models/chatModel'
+import Message from "../Models/messageModel";
 
 const uploadMultiplePromise = promisify(uploadMultiple);
 const uploadSingleImagePromise = promisify(uploadSingle);
@@ -32,6 +33,10 @@ interface sitterregister1 {
     confirmPassword: string;
     phoneno: string;
     gender: string;
+    location: {
+        latitude: number;
+        longitude: number;
+    };
 }
 
 interface User {
@@ -130,10 +135,21 @@ interface ResendOtp {
     sitterId: string;
 }
 
+interface ChatRequest {
+    sitterId: string;
+    parentId: string;
+}
+
+interface MessageBody {
+    chatId: string;
+    senderId: string;
+    content: string;
+}
+
 
 const sitterregisterStep1 = asyncHandler(async (req: Request<{}, {}, sitterregister1>, res: Response): Promise<void> => {
     try {
-        const { name, email, phoneno, password, confirmPassword, gender } = req.body;
+        const { name, email, phoneno, password, confirmPassword, gender, location } = req.body;
         console.log(req.body, 'body')
         const sitterExist = await Sitter.findOne({ email });
         if (sitterExist) {
@@ -155,6 +171,12 @@ const sitterregisterStep1 = asyncHandler(async (req: Request<{}, {}, sitterregis
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
+       
+        const { latitude, longitude } = location;
+
+        
+       
+
 
         const sitter = new Sitter({
             name: name,
@@ -162,6 +184,10 @@ const sitterregisterStep1 = asyncHandler(async (req: Request<{}, {}, sitterregis
             password: hashedPassword,
             phoneno: phoneno,
             gender: gender,
+            location: {
+                type: 'Point',
+                coordinates: [longitude, latitude] 
+            }
 
         })
 
@@ -307,7 +333,7 @@ const sitterforgotPassword = asyncHandler(async (req: Request<{ email: string }>
             generateSitterToken(res, sitter._id as Types.ObjectId)
             sendOTPVerificationEmail(sitter, res)
         }
-        res.status(200).json({message:"otp send"})
+        res.status(200).json({ message: "otp send" })
     }
     catch (error) {
         res.status(500).json({
@@ -394,7 +420,7 @@ const resetsitterPassword = asyncHandler(async (req: CustomRequest<PasswordBody>
         }
 
         const sitterId = req.sitter._id;
-        const sitter = await Sitter.findById(sitterId);
+        const sitter = await Sitter.findById({_id:sitterId});
 
         if (!sitter) {
             res.status(404).json({ message: 'Parent not found' });
@@ -458,26 +484,25 @@ const sitterregisterStep2 = asyncHandler(async (req: Request, res: Response) => 
     }
 })
 
-const sitterregisterStep3 = asyncHandler(async(req:Request<{sitterId : string}>,res:Response)=>{
-    try
-    {
-         const { sitterId } = req.params;
-         const { activities,more } = req.body;
-         if(!activities || !more){
-            res.status(400).json({message:'atleast one activities or more skill required'})
-         }
-         console.log(req.body,'ddd')
-         const sitter = await Sitter.findById({_id:sitterId})
+const sitterregisterStep3 = asyncHandler(async (req: Request<{ sitterId: string }>, res: Response) => {
+    try {
+        const { sitterId } = req.params;
+        const { activities, more } = req.body;
+        if (!activities || !more) {
+            res.status(400).json({ message: 'atleast one activities or more skill required' })
+        }
+        console.log(req.body, 'ddd')
+        const sitter = await Sitter.findById({ _id: sitterId })
 
-         if(!sitter){
-            res.status(404).json({message:'sitter not found'})
+        if (!sitter) {
+            res.status(404).json({ message: 'sitter not found' })
             return
-         }
+        }
 
-         sitter.activities = activities;
-         sitter.more = more;
-         const updatedSitter = await sitter.save() 
-         res.status(200).json({ message:'skills added successfully',sitter:updatedSitter})
+        sitter.activities = activities;
+        sitter.more = more;
+        const updatedSitter = await sitter.save()
+        res.status(200).json({ message: 'skills added successfully', sitter: updatedSitter })
     }
     catch (error) {
         if (error instanceof Error) {
@@ -714,11 +739,15 @@ const sitterLogin = asyncHandler(async (req: Request, res: Response) => {
         }
 
         const sitter = await Sitter.findOne({ email })
-        console.log(sitter,'hey')
+        console.log(sitter, 'hey')
 
         if (!sitter) {
             res.status(404).json({ message: "sitter not found" })
             return;
+        }
+
+        if(sitter.blocked){
+            res.status(403).json({message:'your account is blocked'})
         }
 
         if (sitter.verified === true) {
@@ -880,7 +909,7 @@ const geteditSlot = asyncHandler(async (req: Request<{ sitterId: string, slotId:
             slot = await OccasionalSitting.findById(slotid);
         } else if (sitter?.specialCareSlots.includes(slotid)) {
             slot = await SpecialCareSitting.findById(slotid);
-        } 
+        }
 
         if (!slot) {
             res.status(404).json({ message: 'Slot not found' });
@@ -904,7 +933,7 @@ const editSlot = asyncHandler(async (req: Request<{ sitterId: string }>, res: Re
     try {
         const { sitterId } = req.params;
         const { availableDates }: { availableDates: AvailableDate[] } = req.body;
-        console.log(req.body,'bodyyyyyy')
+        console.log(req.body, 'bodyyyyyy')
 
         const sitter = await Sitter.findById(sitterId);
 
@@ -917,7 +946,7 @@ const editSlot = asyncHandler(async (req: Request<{ sitterId: string }>, res: Re
 
         const formattedAvailableDates = availableDates.map(dateObj => {
             const date = new Date(dateObj.date);
-            date.setUTCHours(0, 0, 0, 0); 
+            date.setUTCHours(0, 0, 0, 0);
 
             return {
                 date,
@@ -996,11 +1025,11 @@ const getBabysitter = asyncHandler(async (req: Request<{ categoryId: string }>, 
         if (!sitter) {
             res.status(404).json({ message: 'sitter not found' })
             return;
-        }   
-    
+        }
+
         console.log(sitter)
 
-        res.status(200).json({sitter})
+        res.status(200).json({ sitter })
     }
     catch (error) {
         if (error instanceof Error) {
@@ -1094,9 +1123,9 @@ const editTimeslot = async (req: Request<{ sitterId: string; slotId: string }>, 
 
                     res.status(200).json({ message: 'Timeslot updated successfully', timeslot });
                     return;
-                } 
-        } 
-    }
+                }
+            }
+        }
 
         if (sitter?.occasionalSlots) {
             const occasionalSlots = await OccasionalSitting.findOne({ _id: { $in: sitter.occasionalSlots } });
@@ -1122,11 +1151,11 @@ const editTimeslot = async (req: Request<{ sitterId: string; slotId: string }>, 
 
                     res.status(200).json({ message: 'Timeslot updated successfully', timeslot });
                     return;
-                } 
-            } 
-        } 
+                }
+            }
+        }
 
-        if (sitter?.specialCareSlots ) {
+        if (sitter?.specialCareSlots) {
             const specialSlots = await SpecialCareSitting.findOne({ _id: { $in: sitter.specialCareSlots } });
             if (specialSlots) {
                 const timeslot = specialSlots.availableDates.find(date => date.timeslots.some(slot => slot._id.toString() === slotId));
@@ -1150,10 +1179,10 @@ const editTimeslot = async (req: Request<{ sitterId: string; slotId: string }>, 
 
                     res.status(200).json({ message: 'Timeslot updated successfully', timeslot });
                     return;
-                } 
-            } 
-        } 
-    }catch (error) {
+                }
+            }
+        }
+    } catch (error) {
         if (error instanceof Error) {
             console.error(error.message);
             res.status(500).json({ message: error.message });
@@ -1165,9 +1194,9 @@ const editTimeslot = async (req: Request<{ sitterId: string; slotId: string }>, 
 }
 
 
-const bookingsList = asyncHandler(async(req:Request<{sitterId:string}>,res:Response)=>{
-    try{
-        const { sitterId }  = req.params;
+const bookingsList = asyncHandler(async (req: Request<{ sitterId: string }>, res: Response) => {
+    try {
+        const { sitterId } = req.params;
 
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -1179,7 +1208,7 @@ const bookingsList = asyncHandler(async(req:Request<{sitterId:string}>,res:Respo
                 path: 'parent',
                 select: '-password',
             })
-            .skip(skip)    
+            .skip(skip)
             .limit(limit);
 
         res.status(200).json({
@@ -1202,12 +1231,139 @@ const bookingsList = asyncHandler(async(req:Request<{sitterId:string}>,res:Respo
     }
 });
 
+const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: Response) => {
+    try {
+        const { sitterId, parentId } = req.body;
+        let chat = await Chat.findOne({
+            participants: { $all: [sitterId, parentId] }
+        });
+
+        if (!chat) {
+            chat = new Chat({
+                participants: [sitterId, parentId],
+                messages: []
+            });
+            await chat.save();
+        }
+        console.log(chat, 'chat')
+
+        res.status(201).json(chat);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const sendMessage = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        await new Promise<void>((resolve, reject) => {
+            uploadFields(req, res, (err: any) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        const { chatId, senderId, content, timestamp } = req.body;
+        console.log(req.body, 'jj')
+        const imageUrl = req.files && (req.files as any).image ? (req.files as any).image[0].location : '';
+        const videoUrl = req.files && (req.files as any).video ? (req.files as any).video[0].location : '';
+        const audioUrl = req.files && (req.files as any).audio ? (req.files as any).audio[0].location : '';
+
+
+        const message = new Message({
+            chat: chatId,
+            sender: senderId,
+            content: content,
+            timestamp: new Date(timestamp),
+            ImageUrl: imageUrl || '',
+            VideoUrl: videoUrl || '',
+            AudioUrl: audioUrl || ''
+        });
+
+        await Chat.findByIdAndUpdate(
+            chatId,
+            { $push: { messages: message._id } },
+            { new: true }
+        );
+        res.status(200).json({ message })
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getMessages = asyncHandler(async (req: Request<{ chatId: string }>, res: Response) => {
+    try {
+        const { chatId } = req.params;
+        const messages = await Message.find({ chat: chatId }).sort({ timestamp: 1 });
+        console.log(messages, 'mes')
+        res.status(200).json({ messages });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const checkBlocked = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+       const { sitterId } = req.query;
+       console.log(sitterId)
+       const sitter = await Sitter.findById({ _id:sitterId})
+       console.log(sitter,'kk')
+       if(!sitter){
+        res.status(404).json({message:'sitter not found'})   
+        return;
+       }
+
+       if(sitter.blocked)
+       {
+        console.log('bloced')
+        res.status(200).json({sitter,message:'You are blocked'})
+        return;
+       }
+       else{
+        res.status(200).json({sitter})
+        return
+       }     
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
 
 export {
-    sitterregisterStep1, sitterregisterStep2,sitterregisterStep3, getsittingOptions,
+    sitterregisterStep1, sitterregisterStep2, sitterregisterStep3, getsittingOptions,
     sitterLogout, saveSittingOption, manageSlots, uploadVerificationDocuments, getStatus, getsitterProfile,
     sitterverifyOtp, sitresendOtp, sitterforgotPassword, sitterpasswordOtp, resetsitterPassword, sitterLogin,
-    editProfile, getSlots, getSittingcategory, geteditSlot, editSlot,getBabysitter,editTimeslot,
-    bookingsList
-    
+    editProfile, getSlots, getSittingcategory, geteditSlot, editSlot, getBabysitter, editTimeslot,
+    bookingsList, createChat, sendMessage, getMessages, checkBlocked
+
 }

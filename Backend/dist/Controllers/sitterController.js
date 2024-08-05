@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bookingsList = exports.editTimeslot = exports.getBabysitter = exports.editSlot = exports.geteditSlot = exports.getSittingcategory = exports.getSlots = exports.editProfile = exports.sitterLogin = exports.resetsitterPassword = exports.sitterpasswordOtp = exports.sitterforgotPassword = exports.sitresendOtp = exports.sitterverifyOtp = exports.getsitterProfile = exports.getStatus = exports.uploadVerificationDocuments = exports.manageSlots = exports.saveSittingOption = exports.sitterLogout = exports.getsittingOptions = exports.sitterregisterStep3 = exports.sitterregisterStep2 = exports.sitterregisterStep1 = void 0;
+exports.checkBlocked = exports.getMessages = exports.sendMessage = exports.createChat = exports.bookingsList = exports.editTimeslot = exports.getBabysitter = exports.editSlot = exports.geteditSlot = exports.getSittingcategory = exports.getSlots = exports.editProfile = exports.sitterLogin = exports.resetsitterPassword = exports.sitterpasswordOtp = exports.sitterforgotPassword = exports.sitresendOtp = exports.sitterverifyOtp = exports.getsitterProfile = exports.getStatus = exports.uploadVerificationDocuments = exports.manageSlots = exports.saveSittingOption = exports.sitterLogout = exports.getsittingOptions = exports.sitterregisterStep3 = exports.sitterregisterStep2 = exports.sitterregisterStep1 = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -28,11 +28,13 @@ const upload_1 = require("../Connections/upload");
 const weekendsittingModel_1 = __importDefault(require("../Models/weekendsittingModel"));
 const occasionalsittingModel_1 = __importDefault(require("../Models/occasionalsittingModel"));
 const specialcareModel_1 = __importDefault(require("../Models/specialcareModel"));
+const chatModel_1 = __importDefault(require("../Models/chatModel"));
+const messageModel_1 = __importDefault(require("../Models/messageModel"));
 const uploadMultiplePromise = (0, util_1.promisify)(upload_1.uploadMultiple);
 const uploadSingleImagePromise = (0, util_1.promisify)(upload_1.uploadSingle);
 const sitterregisterStep1 = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, email, phoneno, password, confirmPassword, gender } = req.body;
+        const { name, email, phoneno, password, confirmPassword, gender, location } = req.body;
         console.log(req.body, 'body');
         const sitterExist = yield sitterModel_1.default.findOne({ email });
         if (sitterExist) {
@@ -49,12 +51,17 @@ const sitterregisterStep1 = (0, express_async_handler_1.default)((req, res) => _
             return;
         }
         const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
+        const { latitude, longitude } = location;
         const sitter = new sitterModel_1.default({
             name: name,
             email: email,
             password: hashedPassword,
             phoneno: phoneno,
             gender: gender,
+            location: {
+                type: 'Point',
+                coordinates: [longitude, latitude]
+            }
         });
         yield sitter.save();
         yield sendOTPVerificationEmail({ id: sitter._id, email: sitter.email }, res);
@@ -255,7 +262,7 @@ const resetsitterPassword = (0, express_async_handler_1.default)((req, res) => _
             return;
         }
         const sitterId = req.sitter._id;
-        const sitter = yield sitterModel_1.default.findById(sitterId);
+        const sitter = yield sitterModel_1.default.findById({ _id: sitterId });
         if (!sitter) {
             res.status(404).json({ message: 'Parent not found' });
             return;
@@ -529,6 +536,9 @@ const sitterLogin = (0, express_async_handler_1.default)((req, res) => __awaiter
         if (!sitter) {
             res.status(404).json({ message: "sitter not found" });
             return;
+        }
+        if (sitter.blocked) {
+            res.status(403).json({ message: 'your account is blocked' });
         }
         if (sitter.verified === true) {
             const passwordMatch = yield bcryptjs_1.default.compare(password, sitter.password);
@@ -961,3 +971,123 @@ const bookingsList = (0, express_async_handler_1.default)((req, res) => __awaite
     }
 }));
 exports.bookingsList = bookingsList;
+const createChat = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId, parentId } = req.body;
+        let chat = yield chatModel_1.default.findOne({
+            participants: { $all: [sitterId, parentId] }
+        });
+        if (!chat) {
+            chat = new chatModel_1.default({
+                participants: [sitterId, parentId],
+                messages: []
+            });
+            yield chat.save();
+        }
+        console.log(chat, 'chat');
+        res.status(201).json(chat);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.createChat = createChat;
+const sendMessage = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield new Promise((resolve, reject) => {
+            (0, upload_1.uploadFields)(req, res, (err) => {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+        const { chatId, senderId, content, timestamp } = req.body;
+        console.log(req.body, 'jj');
+        const imageUrl = req.files && req.files.image ? req.files.image[0].location : '';
+        const videoUrl = req.files && req.files.video ? req.files.video[0].location : '';
+        const audioUrl = req.files && req.files.audio ? req.files.audio[0].location : '';
+        const message = new messageModel_1.default({
+            chat: chatId,
+            sender: senderId,
+            content: content,
+            timestamp: new Date(timestamp),
+            ImageUrl: imageUrl || '',
+            VideoUrl: videoUrl || '',
+            AudioUrl: audioUrl || ''
+        });
+        yield chatModel_1.default.findByIdAndUpdate(chatId, { $push: { messages: message._id } }, { new: true });
+        res.status(200).json({ message });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.sendMessage = sendMessage;
+const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { chatId } = req.params;
+        const messages = yield messageModel_1.default.find({ chat: chatId }).sort({ timestamp: 1 });
+        console.log(messages, 'mes');
+        res.status(200).json({ messages });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getMessages = getMessages;
+const checkBlocked = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId } = req.query;
+        console.log(sitterId);
+        const sitter = yield sitterModel_1.default.findById({ _id: sitterId });
+        console.log(sitter, 'kk');
+        if (!sitter) {
+            res.status(404).json({ message: 'sitter not found' });
+            return;
+        }
+        if (sitter.blocked) {
+            console.log('bloced');
+            res.status(200).json({ sitter, message: 'You are blocked' });
+            return;
+        }
+        else {
+            res.status(200).json({ sitter });
+            return;
+        }
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.checkBlocked = checkBlocked;

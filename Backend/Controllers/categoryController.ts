@@ -322,6 +322,7 @@ const getName = (async (req: Request, res: Response) => {
       }
   
       const names = childcategories.map(category => category.name);
+      console.log(names,'nn')
   
       res.status(200).json({ names });
     } catch (error) {

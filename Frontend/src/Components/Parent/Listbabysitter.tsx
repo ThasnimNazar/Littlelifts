@@ -10,12 +10,12 @@ const Listbabysitter: React.FC<Category> = ({ category }) => {
     const categoryId = category;
     const [babysitters, setBabysitters] = useState<any[]>([]);
     const [selectedSitter, setSelectedSitter] = useState<any | null>(null);
-    const { isOpen, onOpen, onClose } = useDisclosure(); // Chakra UI useDisclosure hook for managing drawer state
+    const { isOpen, onOpen, onClose } = useDisclosure(); 
     const toast = useToast();
 
     const handleViewProfile = (sitter: any) => {
         setSelectedSitter(sitter);
-        onOpen(); // Open the drawer when viewing profile
+        onOpen(); 
     };
 
     useEffect(() => {

@@ -2,10 +2,10 @@ import express from 'express'
 import {
  registerParent,parentLogin,parentLogout,editProfile,getProfile,listSitter,verifyOtp,
  forgotPassword,parentpasswordOtp,resetparentPassword,resendOtp,searchBabysitters,filterBabysittersByDate,
- getAvailabledates,getName,getSlots,bookingsParent,
+ getAvailabledates,getName,getSlots,bookingsParent,createChat,getMessages,sendMessage, markSeen, postReview,isBlocked
 } from '../Controllers/parentController'
 
-import { confirmBooking} from '../Controllers/bookingController'
+import { confirmBooking,getBookedsitters } from '../Controllers/bookingController'
 
 import { getAllchildCategory,getAllsittingCategory } from '../Controllers/categoryController'
 
@@ -33,9 +33,16 @@ parentroute.get('/get-slots/:sitterId',protectParent,getSlots)
 parentroute.post('/checkout-session/:sitterId',protectParent,confirmBooking)
 parentroute.get('/bookings/:parentId',protectParent,bookingsParent)
 
+parentroute.get('/booked-sitters/:parentId',protectParent,getBookedsitters)
+parentroute.post('/createchat',protectParent,createChat)
+parentroute.get('/get-messages/:chatId',protectParent,getMessages)
+parentroute.post('/send-message',protectParent,sendMessage)
+parentroute.post('/mark-seen',protectParent,markSeen)
+parentroute.post('/post-review',protectParent,postReview)
+parentroute.get('/check-block',protectParent,isBlocked)
 
 
-parentroute.post('/getnames',protectParent,getName)    
+parentroute.post('/getnames',protectParent,getName)        
 
 
 

@@ -51,6 +51,10 @@ const bookingSchema = new mongoose_1.Schema({
         type: [String],
         enum: ["Pending", "succeeded"],
         default: []
+    },
+    reviewSubmitted: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 const Booking = (0, mongoose_1.model)('Booking', bookingSchema);

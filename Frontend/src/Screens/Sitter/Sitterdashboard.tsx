@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { VStack, Text, Spinner, useToast } from "@chakra-ui/react";
+import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
-import Sitterheader from "../../Layouts/Adminlayouts/Sitter/Sitterheader";
 import { setSitterCredentials } from "../../Slices/Sitterslice";
 import Sitterlayout from "../../Components/Sitter/Sitterlayout";
 import { RootState } from "../../Store";
@@ -22,6 +22,7 @@ const SitterDashboard: React.FC = () => {
 
   const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
   const sitterId = sitterInfo?._id;
+  const navigate = useNavigate()
 
   const [bookings, setBookings] = useState<any[]>([]);
 
@@ -83,6 +84,12 @@ const SitterDashboard: React.FC = () => {
       });
     }
   };
+
+  useEffect(()=>{
+    if(!sitterInfo){
+      navigate('/sitter/sitterlogin')
+    }
+  },[])
 
 
   useEffect(() => {

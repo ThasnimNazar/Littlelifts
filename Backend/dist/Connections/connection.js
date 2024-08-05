@@ -19,10 +19,12 @@ dotenv_1.default.config();
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const mongoUri = process.env.MONGO_URI;
+        console.log(mongoUri, 'mongouri');
         if (!mongoUri) {
             throw new Error('MONGO_URI is not defined in the environment variables');
         }
         const connectMongoDB = yield mongoose_1.default.connect(mongoUri);
+        console.log(connectMongoDB, 'connect');
         console.log(`MongoDB connected successfully: ${connectMongoDB.connection.host}`);
     }
     catch (error) {

@@ -18,6 +18,7 @@ const Sitterloginscreen : React.FC = () =>{
     const [password, setPassword] = useState<string>('')
 
     const { sitterInfo } = useSelector((state:RootState)=>state.sitterAuth)
+    const sitterId = sitterInfo?._id;
 
     const navigate = useNavigate()
     const toast = useToast()
@@ -92,10 +93,35 @@ const Sitterloginscreen : React.FC = () =>{
       }
 
       useEffect(()=>{
-        if(sitterInfo){
+        const fetchBlock = async()=>{
+           try{
+              const response = await axios.get('/api/sitter/check-block',{
+                 params:{ sitterId }
+              })
+              console.log(response)
+              dispatch(setSitterCredentials({ ...response.data.sitter }));
+           }
+           catch (error) {
+              toast({
+                  title: 'Error',
+                  description: 'An unknown error occurred',
+                  status: 'error',
+                  duration: 3000,
+                  isClosable: true,
+                  position: 'top-right',
+              });
+           }
+        }
+        fetchBlock()
+     },[])
+
+     useEffect(()=>{
+        if(sitterInfo && sitterInfo.blocked === false){
             navigate('/sitter/sitterhome')
         }
-      })
+     },[])
+
+     
   
     return(
         <>

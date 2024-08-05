@@ -123,7 +123,7 @@ const Weekendsitting: React.FC<WeekendsittingProps> = ({ selectedOptionid }) => 
 
    // Utility function to format time without seconds
 const formatTimeWithoutSeconds = (date) => {
-    return date.toISOString().substr(0, 16); // "YYYY-MM-DDTHH:MM"
+    return date.toISOString().substr(0, 16); 
 };
 
 // Formatting and preparing data to save

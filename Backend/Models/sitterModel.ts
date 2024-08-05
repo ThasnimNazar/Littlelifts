@@ -24,6 +24,10 @@ interface Sitter extends Document {
     profileImage: string;
     verified:boolean;
     blocked:boolean;
+    location: {
+        type: 'Point';
+        coordinates: [number, number]; 
+    };
 }
 
 const sitterSchema = new Schema<Sitter>({
@@ -107,9 +111,17 @@ const sitterSchema = new Schema<Sitter>({
         type:Boolean,
         default:false
     },
+    location: {
+        type: { type: String, default: 'Point' },
+        coordinates: { type: [Number], required: true }
+    }
     
 }, 
 { timestamps: true });
+
+
+
+sitterSchema.index({ location: '2dsphere' });
 
 const Sitter = model<Sitter>('Sitter', sitterSchema);
 export type SitterDocument =  Sitter & { _id: Types.ObjectId };

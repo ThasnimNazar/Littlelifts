@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const sitterController_1 = require("../Controllers/sitterController");
+const parentController_1 = require("../Controllers/parentController");
 const authMiddleware_1 = require("../Middleware/authMiddleware");
 const bookingController_1 = require("../Controllers/bookingController");
 const categoryController_1 = require("../Controllers/categoryController");
@@ -40,4 +41,10 @@ sitterroute.get('/bookings/:sitterId', authMiddleware_1.protectSitter, sitterCon
 sitterroute.post('/approve-booking/:bookingId', authMiddleware_1.protectSitter, bookingController_1.bookingApproval);
 sitterroute.post('/reject-booking/:bookingId', authMiddleware_1.protectSitter, bookingController_1.bookingRejection);
 sitterroute.post('/webhook', bookingController_1.handleStripeWebhook);
+sitterroute.get('/booked-parents/:sitterId', authMiddleware_1.protectSitter, bookingController_1.getBookedparents);
+sitterroute.post('/createchat', authMiddleware_1.protectSitter, sitterController_1.createChat);
+sitterroute.get('/get-messages/:chatId', authMiddleware_1.protectSitter, sitterController_1.getMessages);
+sitterroute.post('/send-message', authMiddleware_1.protectSitter, sitterController_1.sendMessage);
+sitterroute.post('/mark-seen', authMiddleware_1.protectSitter, parentController_1.markSeen);
+sitterroute.get('/check-block', authMiddleware_1.protectSitter, sitterController_1.checkBlocked);
 exports.default = sitterroute;

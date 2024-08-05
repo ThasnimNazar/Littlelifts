@@ -6,6 +6,7 @@ interface ParentInfo {
     email: string;
     phoneno: string;
     categoryofchild: string;
+    blocked:boolean;
 }
 
 interface ParentAuthState {

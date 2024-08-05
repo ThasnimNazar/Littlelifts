@@ -102,6 +102,11 @@ const sitterSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    location: {
+        type: { type: String, default: 'Point' },
+        coordinates: { type: [Number], required: true }
+    }
 }, { timestamps: true });
+sitterSchema.index({ location: '2dsphere' });
 const Sitter = (0, mongoose_1.model)('Sitter', sitterSchema);
 exports.default = Sitter;

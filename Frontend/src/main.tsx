@@ -20,6 +20,7 @@ import Bookingscreen from './Screens/Sitter/Parent/Bookingscreen.tsx';
 import Success from './Screens/Sitter/Parent/Success.tsx'
 import Parentbookings from './Screens/Sitter/Parent/Parentbookings.tsx';
 import Wallet from './Screens/Sitter/Parent/Wallet.tsx';
+import Chatscreen from './Screens/Sitter/Parent/Chatscreen.tsx';
 
 
 import Sitterregisterstep1screen from './Screens/Sitter/Sitterregiterstep1screen.tsx';
@@ -40,6 +41,8 @@ import Sitterprivateroutes from './Components/Sitter/Sitterprivateroutes.tsx';
 import Sitterresetpassword from './Screens/Sitter/Sitterresetpassword.tsx';
 import SitterRegistrationStep from './Screens/Sitter/Sitterregisterationstep.tsx';
 import Bookings from './Screens/Sitter/Bookings.tsx';
+import Sitterchat from './Screens/Sitter/Sitterchat.tsx';
+
 
 
 import Adminhomescreen from './Screens/Sitter/Admin/Adminhomescreen.tsx';
@@ -82,15 +85,19 @@ root.render(
         <Route path = '/sitter/forgetpassword' element = {<Sitterforgetpassword/>} />
         <Route path = '/sitter/forget-otp' element = {<Sitterforgetotp/>} />
         <Route path = '/sitter/reset-password' element = {<Sitterresetpassword/>} />
-
-
-
         <Route path = '/sitter/sitterhome' element = {<Sitterdashboard/>} />
+
+
+
+        <Route path = '' element = {<Sitterprivateroutes/>}>
         <Route path = '/sitter/viewprofile' element = {<Sitterviewprofile/>} />
         <Route path = '/sitter/slot' element = {<Sitterslotscreen/>} />
         <Route path = '/sitter/editslot/:slotId' element = {<Editslotscreen/>} />
         <Route path = '/sitter/edit-slots' element = {<Editslots/>} />
         <Route path = '/sitter/bookings' element = {<Bookings/>} />
+        <Route path = '/sitter/chat' element = {<Sitterchat/>} />
+        </Route>
+
         
 
         <Route path = '/parent/parentregister' element={<Parentregistration/>} />
@@ -100,13 +107,16 @@ root.render(
         <Route path = '/parent/forget-otp' element = {<Forgetotpscreen/>}/>
         <Route path = '/parent/resetpassword' element = {<Resetpasswordscreen/>} />
         <Route path = '/parent/babysitters' element = {<Babysitters/>} />
-        <Route path = '/parent/booking' element = {<Parentbookings/>} />
-        <Route path = '/parent/wallet' element = {<Wallet/>} />
+        
+
 
         <Route path = '' element = {<Parentprivateroutes/>}>
         <Route path = '/parent/viewprofile' element = {<Viewparentprofile/>} />
         <Route path = '/parent/confirmbooking' element = {<Bookingscreen/>} />
         <Route path = '/parent/checkout-success' element = {<Success/>} />
+        <Route path = '/parent/chat' element = {<Chatscreen/>} />
+        <Route path = '/parent/booking' element = {<Parentbookings/>} />
+        <Route path = '/parent/wallet' element = {<Wallet/>} />
         </Route>
 
 

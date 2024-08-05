@@ -16,6 +16,7 @@ interface Booking extends Document {
     sessionId: string;
     refundAmount: number;
     refundStatus: ("Pending" | "succeeded")[];
+    reviewSubmitted:boolean;
 
 
 }
@@ -70,9 +71,11 @@ const bookingSchema = new Schema<Booking>({
         type: [String], 
         enum: ["Pending", "succeeded"],
         default: [] 
+    },
+    reviewSubmitted:{
+        type:Boolean,
+        default:false
     }
-
-
 
 }, { timestamps: true })
 

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleStripeWebhook = exports.bookingRejection = exports.bookingApproval = exports.confirmBooking = void 0;
+exports.getBookedparents = exports.getBookedsitters = exports.handleStripeWebhook = exports.bookingRejection = exports.bookingApproval = exports.confirmBooking = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = require("mongoose");
 const sitterModel_1 = __importDefault(require("../Models/sitterModel"));
@@ -96,9 +96,6 @@ const confirmBooking = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 }
             ]
         });
-        startTime = stripSeconds(new Date(startTime));
-        endTime = stripSeconds(new Date(endTime));
-        console.log(startTime, 'startTime');
         const booking = new bookingModel_1.default({
             sitter: sitter._id,
             parent: parent._id,
@@ -394,3 +391,47 @@ const handleStripeWebhook = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.handleStripeWebhook = handleStripeWebhook;
+const getBookedsitters = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { parentId } = req.params;
+        const findSitters = yield bookingModel_1.default.find({ parent: parentId, status: 'Approved' })
+            .populate({
+            path: 'sitter',
+            select: '-password',
+        });
+        res.status(200).json({ sitter: findSitters });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getBookedsitters = getBookedsitters;
+const getBookedparents = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId } = req.params;
+        const findParent = yield bookingModel_1.default.find({ sitter: sitterId, status: 'Approved' })
+            .populate({
+            path: 'parent',
+            select: '-password',
+        });
+        res.status(200).json({ parent: findParent });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getBookedparents = getBookedparents;

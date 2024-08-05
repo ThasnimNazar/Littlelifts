@@ -4,6 +4,7 @@ import axios from 'axios';
 
 const ManageParent: React.FC = () => {
   const [parents, setParent] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState<any | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [parentToBlock, setParentToBlock] = useState<any | null>(null);
@@ -40,8 +41,9 @@ const ManageParent: React.FC = () => {
     setParentToBlock(null);
   };
 
- 
-
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
  
 
   const toggleBlockStatus = (sitter: any) => {
@@ -72,7 +74,7 @@ const ManageParent: React.FC = () => {
         position: 'top-right',
       });
 
-      confirmBlockStatus();
+      closeModal();   
     } catch (error) {
       toast({
         title: 'Error',

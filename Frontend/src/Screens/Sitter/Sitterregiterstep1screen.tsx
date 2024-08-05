@@ -34,10 +34,29 @@ const Sitterregisterstep1screen: React.FC = () => {
 	const [confirmPassword, setconfirmPassword] = useState<string>('')
 	const [phoneno, setPhoneno] = useState<string>('')
 	const [gender, setGender] = useState<string>('')
+	const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
 	const toast = useToast()
 
 	const navigate = useNavigate()
-	const { sitterInfo } = useSelector((state:RootState)=>state.sitterAuth)
+	const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth)
+
+	useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setLatitude(latitude);
+                    setLongitude(longitude);
+                },
+                (error) => {
+                    console.error('Error fetching location:', error);
+                }
+            );
+        } else {
+            console.log('Geolocation is not supported by this browser.');
+        }
+    }, []);
 
 	const handleRegisterstep1 = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -74,6 +93,10 @@ const Sitterregisterstep1screen: React.FC = () => {
 			formErrors.gender = 'Please select a valid gender';
 		}
 
+		if (latitude === null || longitude === null) {
+            formErrors.location = 'Location is required';
+        }
+
 		if (Object.keys(formErrors).length > 0) {
 			Object.entries(formErrors).forEach(([field, errorMessage]) => {
 				toast({
@@ -89,7 +112,7 @@ const Sitterregisterstep1screen: React.FC = () => {
 		else {
 			try {
 				const res = await axios.post<RegisterResponse>('/api/sitter', {
-					name, email, phoneno, password, confirmPassword, gender
+					name, email, phoneno, password, confirmPassword, gender, location: { latitude, longitude }
 				})
 				console.log(res, 'kk')
 				if (res.data) {
@@ -127,8 +150,8 @@ const Sitterregisterstep1screen: React.FC = () => {
 		}
 	}
 
-	useEffect(()=>{
-		if(sitterInfo){
+	useEffect(() => {
+		if (sitterInfo) {
 			navigate('/sitter/sitterhome')
 		}
 	})
@@ -150,43 +173,45 @@ const Sitterregisterstep1screen: React.FC = () => {
 							<span className="border-b w-1/5 lg:w-1/4"></span>
 						</div>
 						<form onSubmit={handleRegisterstep1}>
-						<div className="mt-2">
-							<input placeholder="Enter your name" value = {name} onChange={(e:React.ChangeEvent<HTMLInputElement>)=>setName(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="text"  />
-						</div>
-						<div className="mt-2">
-							<input placeholder="Enter your email" value={email} onChange={(e:React.ChangeEvent<HTMLInputElement>)=>setEmail(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="email" />
-						</div>
-						<div className="mt-2">
-							<input placeholder="Enter your phoneno" value={phoneno} onChange={(e:React.ChangeEvent<HTMLInputElement>)=>setPhoneno(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="number" />
-						</div>
-						<div className="mt-2">
-							<input placeholder="Enter your password" value={password} onChange={(e:React.ChangeEvent<HTMLInputElement>)=>setPassword(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="password" />
-						</div>
-						<div className="mt-2">
-							<input placeholder="confirm your password" value={confirmPassword} onChange={(e:React.ChangeEvent<HTMLInputElement>)=>setconfirmPassword(e.target.value)} className="bg-white font-semibold text-sm text-black focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="password" />
-						</div>
-						<div className="mt-2">
-                                <select
-                                    id="childCategory"
-                                    className="input-field w-full bg-white text-black focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none"
+							<div className="mt-2">
+								<input placeholder="Enter your name" value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="text" />
+							</div>
+							<div className="mt-2">
+								<input placeholder="Enter your email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="email" />
+							</div>
+							<div className="mt-2">
+								<input placeholder="Enter your phoneno" value={phoneno} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneno(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="number" />
+							</div>
+							<div className="mt-2">
+								<input placeholder="Enter your password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="password" />
+							</div>
+							<div className="mt-2">
+								<input placeholder="confirm your password" value={confirmPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setconfirmPassword(e.target.value)} className="bg-white font-semibold text-sm text-black focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="password" />
+							</div>
+							<div className="mt-2">
+								<select
+									id="childCategory"
+									className="input-field w-full bg-white text-black focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none"
 									value={gender}
-									onChange={(e:React.ChangeEvent<HTMLSelectElement>)=>setGender(e.target.value)}
-                                    
-                                >
-                                    <option value="">Select gender</option>
-                                    <option value="male">male</option>
-                                    <option value="female">female</option>
-                                    
-                                </select>
-                            </div>
-						<div className="mt-4">
-							<button type="submit" className="bg-black text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600">Continue</button>
-						</div>
-						<div className="mt-4 flex items-center justify-between">
-							<span className="border-b w-1/5 md:w-1/4"></span>
-							<a href="#" className="text-xs text-gray-500 uppercase">or sign up</a>
-							<span className="border-b w-1/5 md:w-1/4"></span>
-						</div>
+									onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)}
+
+								>
+									<option value="">Select gender</option>
+									<option value="male">male</option>
+									<option value="female">female</option>
+
+								</select>
+							</div>
+							
+
+							<div className="mt-4">
+								<button type="submit" className="bg-black text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600">Continue</button>
+							</div>
+							<div className="mt-4 flex items-center justify-between">
+								<span className="border-b w-1/5 md:w-1/4"></span>
+								<a href="#" className="text-xs text-gray-500 uppercase">or sign up</a>
+								<span className="border-b w-1/5 md:w-1/4"></span>
+							</div>
 						</form>
 					</div>
 				</div>

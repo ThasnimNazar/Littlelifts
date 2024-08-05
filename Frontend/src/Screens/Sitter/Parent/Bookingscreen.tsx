@@ -84,6 +84,8 @@ const Bookingscreen: React.FC = () => {
 
     console.log(dates, 'date')
     console.log(timeSlots, 'time')
+    console.log(selectedStartTime,'start time')
+    console.log(selectedEndTime,'end time')
 
 
 
@@ -123,14 +125,19 @@ const Bookingscreen: React.FC = () => {
             return;
         }
 
+        const localStartTime = selectedStartTime.toISOString();
+        console.log(localStartTime,'local')
+        const localEndTime = selectedEndTime.toISOString();
+        console.log(localEndTime,'end')
+
         try {
             const response = await axios.post(`/api/parent/checkout-session/${sitterId}`, {
                 selectedDate,
-                startTime: selectedStartTime,
-                endTime: selectedEndTime,
+                startTime: localStartTime,
+                endTime: localEndTime,
             });
             console.log(response, 'fff')
-            const { session } = response.data;
+            const { session } = response.data;    
             window.location.href = session.url;
         } catch (error) {
             handleAxiosError(error);

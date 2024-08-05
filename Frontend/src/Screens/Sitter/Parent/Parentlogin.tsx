@@ -91,11 +91,7 @@ const Parentlogin: React.FC = () => {
         }
     }
 
-    useEffect(() => {
-        if (parentInfo) {
-            navigate('/')
-        }
-    })
+    
     return (
         <>
             <Header />

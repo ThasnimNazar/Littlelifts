@@ -123,9 +123,6 @@ const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Respo
             ]
         })
 
-        startTime = stripSeconds(new Date(startTime));
-        endTime = stripSeconds(new Date(endTime));
-        console.log(startTime,'startTime')
 
         const booking = new Booking({
             sitter: sitter._id,
@@ -480,5 +477,51 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
     }
 };
 
+const getBookedsitters = asyncHandler(async(req:Request<{parentId:string}>,res:Response)=>{
+    try{
+        const { parentId } = req.params;
+        const findSitters = await Booking.find({ parent: parentId,status:'Approved' })
+        .populate({
+            path: 'sitter',
+            select: '-password',
+        })
+        res.status(200).json({sitter:findSitters})
 
-export { confirmBooking, bookingApproval, bookingRejection, handleStripeWebhook }
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getBookedparents = asyncHandler(async(req:Request<{sitterId:string}>,res:Response)=>{
+    try{
+        const { sitterId } = req.params;
+        const findParent = await Booking.find({ sitter: sitterId,status:'Approved' })
+        .populate({
+            path: 'parent',
+            select: '-password',
+        })
+        res.status(200).json({parent:findParent})
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+
+export { confirmBooking, bookingApproval, bookingRejection, handleStripeWebhook, getBookedsitters,
+    getBookedparents
+ }
