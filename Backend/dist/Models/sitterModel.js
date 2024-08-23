@@ -105,7 +105,15 @@ const sitterSchema = new mongoose_1.Schema({
     location: {
         type: { type: String, default: 'Point' },
         coordinates: { type: [Number], required: true }
-    }
+    },
+    lastseen: {
+        type: Date,
+        default: Date.now()
+    },
+    role: {
+        type: String,
+        default: 'sitter'
+    },
 }, { timestamps: true });
 sitterSchema.index({ location: '2dsphere' });
 const Sitter = (0, mongoose_1.model)('Sitter', sitterSchema);

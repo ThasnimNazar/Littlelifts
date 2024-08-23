@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from 'axios'
+import api from '../../Axiosconfig';
 import { AxiosError } from 'axios';
 import { useToast } from '@chakra-ui/react'
 
@@ -65,7 +66,7 @@ const Addchildcategory: React.FC = () => {
         }
         else {
             try {
-                const response = await axios.post<CategoryResponse>('/api/admin/add-category', {
+                const response = await api.post<CategoryResponse>('/add-category', {
                     name, description
                 })
                 console.log(response, 'res')

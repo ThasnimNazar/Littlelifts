@@ -6,6 +6,8 @@ import 'tailwindcss/tailwind.css';
 import axios from 'axios';
 import Header from '../../Header';
 import Resendotp from '../../Components/Parent/Resendotp';
+import api from '../../Axiosconfig';
+
 
 const Sitterotpscreen: React.FC = () => {
   const [otp, setOtp] = useState<string>('');
@@ -46,7 +48,7 @@ const Sitterotpscreen: React.FC = () => {
         status: 'info',
         isClosable: true,
       })
-     await axios.post('/api/sitter/resendotp')
+     await api.post('/resendotp')
      toast({
       title: 'resend otp successfully',
       status: 'success',
@@ -79,7 +81,7 @@ const Sitterotpscreen: React.FC = () => {
 
   const submitHandler = async () => {
     try {
-      const response = await axios.post('/api/sitter/verifyotp', {
+      const response = await api.post('/verifyotp', {
         otp,
         sitterId: sitterId,
       });

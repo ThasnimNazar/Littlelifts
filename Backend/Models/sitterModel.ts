@@ -28,6 +28,8 @@ interface Sitter extends Document {
         type: 'Point';
         coordinates: [number, number]; 
     };
+    lastseen:Date,
+    role:string
 }
 
 const sitterSchema = new Schema<Sitter>({
@@ -114,7 +116,15 @@ const sitterSchema = new Schema<Sitter>({
     location: {
         type: { type: String, default: 'Point' },
         coordinates: { type: [Number], required: true }
-    }
+    },
+    lastseen:{
+        type:Date,
+        default:Date.now()
+    },
+    role: { 
+        type: String, 
+        default: 'sitter' 
+    },
     
 }, 
 { timestamps: true });

@@ -1,29 +1,28 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import axios from "axios";
 import { RootState } from "../../Store";
-import Sitterlayout from "../../Components/Sitter/Sitterlayout";
 import Weekendslot from "../../Components/Sitter/Weekendslot";
 import Specialcareslot from "../../Components/Sitter/Specialcareslot";
 import Occasionalslot from "../../Components/Sitter/Occasionalslot";
+import api from '../../Axiosconfig';
+
 
 interface TimeSlot {
-    startTime: Date | null;
-    endTime: Date | null;
+    _id: string;
+    startTime: string;
+    endTime: string;
     error: string | null;
-}
+  }
 
 const Sitterslotscreen: React.FC = () => {
     const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
     const toast = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedSitting, setSelectedSitting] = useState<string>('');
-    const [availableDates, setAvailableDates] = useState<{ date: Date; timeslots: TimeSlot[] }[]>([]);
+    const [availableDates, setAvailableDates] = useState<{ date: string | Date; timeslots: TimeSlot[] }[]>([]);
     const [ offDates,setOffdates ] = useState<Date[]>([])
 
-    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchSlots = async () => {
@@ -31,7 +30,7 @@ const Sitterslotscreen: React.FC = () => {
 
             setIsLoading(true);
             try {
-                const response = await axios.get(`/api/sitter/get-slots/${sitterInfo._id}`);
+                const response = await api.get(`/get-slots/${sitterInfo._id}`);
                 console.log(response.data.slots[0].availableDates)
                 console.log(response.data.slots[0].offDates)
                 setAvailableDates(response.data.slots[0].availableDates)
@@ -40,7 +39,7 @@ const Sitterslotscreen: React.FC = () => {
                 console.log(slotsData)
 
                 if (slotsData) {
-                    const categoryResponse = await axios.get(`/api/sitter/get-sittingcategory/${slotsData.sittingCategory}`);
+                    const categoryResponse = await api.get(`/get-sittingcategory/${slotsData.sittingCategory}`);
                     setSelectedSitting(categoryResponse.data.category.name);
                 }
             } catch (error) {
@@ -74,7 +73,7 @@ const Sitterslotscreen: React.FC = () => {
     };
 
     return (
-        <Sitterlayout>
+            <>
         {isLoading ? (
             <div>Loading...</div>
         ) : (
@@ -82,7 +81,7 @@ const Sitterslotscreen: React.FC = () => {
                 {renderSlotComponent()} 
             </div>
         )}
-    </Sitterlayout>
+        </>
     );
 };
 

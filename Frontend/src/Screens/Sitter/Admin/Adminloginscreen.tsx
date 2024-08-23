@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch,useSelector } from 'react-redux'
 import  { useAdminloginMutation} from '../../../Slices/Adminapislice'
 import { RootState } from "../../../Store";
-import { AdminRegisterResponse } from "../../../Slices/Adminapislice";
 import { setCredentials } from "../../../Slices/Adminslice";
 
 
@@ -54,7 +53,12 @@ const Adminloginscreen : React.FC = () =>{
       } else {
     try{
 
-        const response : AdminRegisterResponse = await login({email,password}).unwrap();
+        const response  = await login({email,password}).unwrap();
+        console.log(response,'login')
+        const token = response.token
+        const role = response.role;
+        localStorage.setItem('adminToken',token)
+        localStorage.setItem('role',role)
         dispatch(setCredentials({...response.admin}))
         toast({
             title: "Success",

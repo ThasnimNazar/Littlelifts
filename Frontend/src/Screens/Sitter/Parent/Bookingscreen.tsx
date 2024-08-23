@@ -1,27 +1,71 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
-
+import api from '../../../Axiosconfig'
 
 interface TimeSlot {
-    startTime: Date | null;
-    endTime: Date | null;
+    startTime: Date;
+    endTime: Date;
+    bookingStatus: 'approved' | 'pending' | 'rejected';
 }
+interface SlotData {
+    date: string;
+    timeslots: TimeSlot[];
+}
+
+interface MappedTimeSlot {
+    startTime: Date;
+    endTime: Date;
+    bookingStatus: 'approved' | 'pending' | 'rejected';
+}
+
+interface MappedSlot {
+    date: Date;
+    timeslots: MappedTimeSlot[];
+}
+
+
+interface Babysitter {
+    _id: string;
+    name: string;
+    email: string;
+    profileImage?: string;
+    about: string;
+    gender: string;
+    phoneno: number;
+    childcategory: string[];
+    sittingcategory: string[];
+    selectedSittingOption: string;
+    availableDates: string[];
+    activities: string[];
+    more: string[];
+    yearofexperience: number;
+    workwithpet: string;
+}
+
+
+
+interface ApiResponse {
+    slots: {
+        availableDates: SlotData[];
+    }[];
+}
+
+
 
 const Bookingscreen: React.FC = () => {
     const location = useLocation();
-    const { selectedBabysitter } = location.state as { selectedBabysitter: any[] };
+    const { selectedBabysitter } = location.state as { selectedBabysitter: Babysitter };
     const toast = useToast();
     const sitterId = selectedBabysitter._id;
+    const navigate = useNavigate();
 
 
     const [categoryNames, setCategoryNames] = useState<string[]>([])
     const [dates, setDates] = useState<Date[]>([])
-    const [timeSlots, setTimeslots] = useState<{ date: Date; timeslots: TimeSlot[] }[]>([]);
-    const [offDates, setOffdates] = useState<Date[]>([])
-
+    const [timeSlots, setTimeslots] = useState<MappedSlot[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
     const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null);
@@ -35,7 +79,7 @@ const Bookingscreen: React.FC = () => {
             const ids = selectedBabysitter.childcategory.map(category => category);
             const fetchCategories = async () => {
                 try {
-                    const categoryResponse = await axios.post('/api/parent/getnames', {
+                    const categoryResponse = await api.post('/getnames', {
                         ids: ids
                     })
                     console.log(categoryResponse, 'ggg')
@@ -50,21 +94,23 @@ const Bookingscreen: React.FC = () => {
         }
     }, [selectedBabysitter]);
 
-    console.log(selectedStartTime,'seletime')
-    console.log(selectedEndTime,'seleEndtime')
+    console.log(selectedStartTime, 'seletime')
+    console.log(selectedEndTime, 'seleEndtime')
 
     useEffect(() => {
         const fetchSlots = async () => {
             if (!sitterId) return;
 
             try {
-                const response = await axios.get(`/api/parent/get-slots/${sitterId}`);
+                const response = await api.get<ApiResponse>(`/get-slots/${sitterId}`);
+                console.log(response, 'rr')
                 const slotData = response.data.slots[0].availableDates;
 
-                const dates = slotData.map((slot: any) => new Date(slot.date));
-                const timeslots = slotData.map((slot: any) => ({
+                const dates: Date[] = slotData.map((slot) => new Date(slot.date));
+
+                const mappedSlots: MappedSlot[] = slotData.map((slot) => ({
                     date: new Date(slot.date),
-                    timeslots: slot.timeslots.map((ts: any) => ({
+                    timeslots: slot.timeslots.map((ts) => ({
                         startTime: new Date(ts.startTime),
                         endTime: new Date(ts.endTime),
                         bookingStatus: ts.bookingStatus
@@ -72,7 +118,10 @@ const Bookingscreen: React.FC = () => {
                 }));
 
                 setDates(dates);
-                setTimeslots(timeslots);
+                setTimeslots(mappedSlots);
+
+
+                console.log(timeSlots, 'sloo')
 
             } catch (error) {
                 handleAxiosError(error);
@@ -84,8 +133,8 @@ const Bookingscreen: React.FC = () => {
 
     console.log(dates, 'date')
     console.log(timeSlots, 'time')
-    console.log(selectedStartTime,'start time')
-    console.log(selectedEndTime,'end time')
+    console.log(selectedStartTime, 'start time')
+    console.log(selectedEndTime, 'end time')
 
 
 
@@ -126,26 +175,32 @@ const Bookingscreen: React.FC = () => {
         }
 
         const localStartTime = selectedStartTime.toISOString();
-        console.log(localStartTime,'local')
+        console.log(localStartTime, 'local')
         const localEndTime = selectedEndTime.toISOString();
-        console.log(localEndTime,'end')
+        console.log(localEndTime, 'end')
 
         try {
-            const response = await axios.post(`/api/parent/checkout-session/${sitterId}`, {
+            const response = await api.post(`/checkout-session/${sitterId}`, {
                 selectedDate,
                 startTime: localStartTime,
                 endTime: localEndTime,
             });
-            console.log(response, 'fff')
-            const { session } = response.data;    
-            window.location.href = session.url;
+            console.log(response)
+            if (response.data.session) {
+                const { session } = response.data;
+                window.location.href = session.url;
+            }
+            else if (response.data.booking) {
+                navigate('/parent/checkout-success')
+            }
+
         } catch (error) {
             handleAxiosError(error);
         }
     };
 
 
-    const handleAxiosError = (error: any) => {
+    const handleAxiosError = (error: unknown) => {
         if (axios.isAxiosError(error) && error.response) {
             toast({
                 title: 'Error',
@@ -279,41 +334,48 @@ const Bookingscreen: React.FC = () => {
                             <div className='m-10'>
                                 <h1>Select your slot and confirm booking</h1>
                                 {dates.map((date, index) => (
-                                    <div key={index} className="my-4">
+                                    <div key={index} className="my-4 gap-2">
                                         <h2 className="text-gray-500 mb-2">{date.toLocaleDateString()}</h2>
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             {timeSlots
                                                 .filter((slot) => slot.date.getTime() === date.getTime())
-                                                .map((slot) =>
-                                                    slot.timeslots
-                                                        .slice(
-                                                            currentPageIndex * itemsPerPage,
-                                                            currentPageIndex * itemsPerPage + itemsPerPage
-                                                        )
-                                                        .map((timeslot, idx) => (
-                                                            <button
-                                                                key={idx}
-                                                                className={`px-4 py-2 rounded-md ${timeslot.bookingStatus === 'approved' || timeslot.bookingStatus === 'rejected'
-                                                                        ? 'bg-gray-500 cursor-not-allowed'
-                                                                        : 'bg-black text-white'
-                                                                    }`}
-                                                                onClick={() => {
-                                                                    if (timeslot.bookingStatus !== 'approved' && timeslot.bookingStatus !== 'rejected') {
-                                                                        handleSlotClick(slot.date, timeslot.startTime, timeslot.endTime, timeslot.bookingStatus);
-                                                                    }
-                                                                }}
-                                                                disabled={timeslot.bookingStatus === 'approved' || timeslot.bookingStatus === 'rejected'}
-                                                            >
-                                                                {`${new Date(timeslot.startTime).toLocaleTimeString(
-                                                                    [],
-                                                                    { hour: 'numeric', minute: '2-digit' }
-                                                                )} - ${new Date(timeslot.endTime).toLocaleTimeString(
-                                                                    [],
-                                                                    { hour: 'numeric', minute: '2-digit' }
-                                                                )}`}
-                                                            </button>
-                                                        ))
-                                                )}
+                                                .map((slot) => (
+                                                    <div key={slot.date.getTime()}>
+                                                        {Array.isArray(slot.timeslots) ? (
+                                                            slot.timeslots
+                                                                .slice(
+                                                                    currentPageIndex * itemsPerPage,
+                                                                    currentPageIndex * itemsPerPage + itemsPerPage
+                                                                )
+                                                                .map((timeslot) => (
+                                                                    <button
+                                                                        key={timeslot.startTime.toISOString()}
+                                                                        className={`px-4 py-2 rounded-md ${timeslot.bookingStatus === 'approved' || timeslot.bookingStatus === 'rejected'
+                                                                            ? 'bg-gray-500 cursor-not-allowed'
+                                                                            : 'bg-black text-white'
+                                                                            }`}
+                                                                        onClick={() => {
+                                                                            if (timeslot.bookingStatus !== 'approved' && timeslot.bookingStatus !== 'rejected') {
+                                                                                handleSlotClick(slot.date, timeslot.startTime, timeslot.endTime, timeslot.bookingStatus);
+                                                                            }
+                                                                        }}
+                                                                        disabled={timeslot.bookingStatus === 'approved' || timeslot.bookingStatus === 'rejected'}
+                                                                    >
+                                                                        {`${new Date(timeslot.startTime).toLocaleTimeString(
+                                                                            [],
+                                                                            { hour: 'numeric', minute: '2-digit' }
+                                                                        )} - ${new Date(timeslot.endTime).toLocaleTimeString(
+                                                                            [],
+                                                                            { hour: 'numeric', minute: '2-digit' }
+                                                                        )}`}
+                                                                    </button>
+                                                                ))
+                                                        ) : (
+                                                            <p>No available slots</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+
                                         </div>
                                     </div>
                                 ))}
@@ -349,8 +411,6 @@ const Bookingscreen: React.FC = () => {
                         </button>
 
                     </div>
-
-
                 </div>
             </div>
         </section>

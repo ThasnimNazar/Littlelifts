@@ -5,16 +5,25 @@ import { useToast } from '@chakra-ui/react';
 import { format } from 'date-fns';
 import axios from 'axios';
 
-const AddSlotModal = ({ startDate, onClose, }) => {
-  const [slots, setSlots] = useState([{ startTime: '', endTime: '' }]);
-  const [error, setError] = useState('');
+interface Slot {
+  startTime: string;
+  endTime: string;
+}
+
+interface SlotProps {
+  startDate: Date | string;
+  onClose: () => void;
+}
+
+const AddSlotModal:React.FC<SlotProps> = ({ startDate, onClose, }) => {
+  const [slots, setSlots] = useState<Slot[]>([{ startTime: '', endTime: '' }]);
   const toast = useToast()
 
   const { sitterInfo } = useSelector((state:RootState)=>state.sitterAuth)
   const sitterId = sitterInfo?._id;
 
 
-  const handleSlotChange = (index, field, value) => {
+  const handleSlotChange = (index:number, field:keyof Slot, value: string) => {
 
     const newSlots = [...slots];
     newSlots[index][field] = value;
@@ -25,7 +34,7 @@ const AddSlotModal = ({ startDate, onClose, }) => {
     setSlots([...slots, { startTime: '', endTime: '' }]);
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     for (const slot of slots) {
@@ -124,7 +133,6 @@ const AddSlotModal = ({ startDate, onClose, }) => {
                         />
                       </div>
                     ))}
-                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                     <button
                       type="button"
                       onClick={addSlot}

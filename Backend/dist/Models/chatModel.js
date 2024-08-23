@@ -26,7 +26,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const chatSchema = new mongoose_1.Schema({
     participants: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true }],
-    messages: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Message' }]
+    messages: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Message' }],
+    lastMessage: { type: String, default: '' },
+    lastMessageTimestamp: { type: Date, default: null }
 });
 const Chat = mongoose_1.default.model('Chat', chatSchema);
 exports.default = Chat;

@@ -1,20 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useToast, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
 import axios from 'axios';
+import api from '../../Axiosconfig';
+
+interface Sitter{
+  _id:string;
+  name:string;
+  email:string;
+  phoneno:number;
+  maxchildren:number;
+  workwithpet:string;
+  yearofexperience:number;
+  gender:string;
+  blocked:boolean;
+  verified:boolean;
+  verificationDocuments:string[];
+  servicepay:number;
+}
+
+interface SitterBlock{
+  _id:string;
+  name:string;
+  blocked:boolean;
+}
+
 
 const Managesitter: React.FC = () => {
-  const [sitters, setSitters] = useState<any[]>([]);
+  const [sitters, setSitters] = useState<Sitter[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [selectedSitter, setSelectedSitter] = useState<any | null>(null);
-  const [sitterToBlock, setSitterToBlock] = useState<any | null>(null);
+  const [selectedSitter, setSelectedSitter] = useState<Sitter | null>(null);
+  const [sitterToBlock, setSitterToBlock] = useState<SitterBlock | null>(null);
 
   const toast = useToast();
 
   useEffect(() => {
     const fetchSitters = async () => {
       try {
-        const response = await axios.get('/api/admin/get-sitters');
+        const response = await api.get('/get-sitters');
         console.log(response.data, 'res');
         if (response.data && response.data[0]) {
           setSitters(response.data[0]);
@@ -33,7 +56,7 @@ const Managesitter: React.FC = () => {
     fetchSitters();
   }, []);
 
-  const handleVerify = (sitter: any) => {
+  const handleVerify = (sitter: Sitter) => {
     setSelectedSitter(sitter);
     setIsModalOpen(true);
   };
@@ -94,7 +117,7 @@ const Managesitter: React.FC = () => {
     }
   };
 
-  const toggleBlockStatus = (sitter: any) => {
+  const toggleBlockStatus = (sitter: Sitter) => {
     setSitterToBlock(sitter);
     setIsConfirmModalOpen(true);
   };
@@ -189,7 +212,7 @@ const Managesitter: React.FC = () => {
             <p>Gender: {selectedSitter?.gender}</p>
             <p>Max children will watch: {selectedSitter?.maxchildren}</p>
             <p>Service pay: {selectedSitter?.servicepay}</p>
-            <p>Willing to work with pet: {selectedSitter?.workwithpe}</p>
+            <p>Willing to work with pet: {selectedSitter?.workwithpet}</p>
             <p>Years of experience: {selectedSitter?.yearofexperience}</p>
             <p>Submitted documents:</p>
             {selectedSitter?.verificationDocuments && Array.isArray(selectedSitter.verificationDocuments) && selectedSitter.verificationDocuments.length > 0 ? (

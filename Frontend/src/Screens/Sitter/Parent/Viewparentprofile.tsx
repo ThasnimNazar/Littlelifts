@@ -2,9 +2,10 @@ import { useState, useEffect, FormEvent } from "react";
 import { useSelector,useDispatch } from "react-redux";
 import { useToast } from "@chakra-ui/react";
 import Parentlayout from "../../../Components/Parent/Parentlayout";
-import axios from "axios";
 import { RootState } from "../../../Store";
 import { setParentCredentials } from "../../../Slices/Parentslice";
+import api from '../../../Axiosconfig'
+
 
 interface FormErrors {
     [key: string]: string;
@@ -25,7 +26,7 @@ const Viewparentprofile: React.FC = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await axios.get(`/api/parent/profile/${parentId}`);
+                const response = await api.get(`/profile/${parentId}`);
                 console.log(response.data)
                 setName(response.data.parent.name);
                 setPhoneno(response.data.parent.phoneno);
@@ -76,7 +77,7 @@ const Viewparentprofile: React.FC = () => {
             }
 
             try {
-                const response = await axios.put(`/api/parent/edit-profile/${parentId}`, formData, {
+                const response = await api.put(`/edit-profile/${parentId}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },

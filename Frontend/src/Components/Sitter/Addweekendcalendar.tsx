@@ -6,15 +6,20 @@ import { useToast } from '@chakra-ui/react';
 import '../../Css/Admin/Sitter/Fullcalendar.css';
 
 interface FullCalendarProps {
-    handleDateSelect: (info: any) => void;
+    handleDateSelect: (info: DateSelectInfo) => void;
 }
+
+interface DateSelectInfo {
+    start: Date;
+    startStr: string;
+  }
 
 const Addweekendcalendar: React.FC<FullCalendarProps> = ({ handleDateSelect }) => {
     const toast = useToast();
     const [selectedDates, setSelectedDates] = useState<string[]>([]);
     const today = new Date();
 
-    const handleDateSelectWrapper = (info: any) => {
+    const handleDateSelectWrapper = (info: DateSelectInfo) => {
         const { startStr, start } = info;
         const selectedDate = new Date(start);
         const dayOfWeek = selectedDate.getUTCDay();
@@ -63,7 +68,7 @@ const Addweekendcalendar: React.FC<FullCalendarProps> = ({ handleDateSelect }) =
                 dayHeaders={true}
                 dayCellClassNames={(args) => {
                     const dayOfWeek = args.date.getUTCDay();
-                    if (dayOfWeek === 5 || dayOfWeek === 5) {
+                    if (dayOfWeek === 5 || dayOfWeek === 5 ) {
                         return 'fc-weekend-day';
                     } else {
                         return 'fc-non-weekend-day';

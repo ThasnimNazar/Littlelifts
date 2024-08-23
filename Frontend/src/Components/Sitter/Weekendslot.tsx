@@ -1,19 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../Store';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useToast } from '@chakra-ui/react';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import AddSlotModal from './Addslotmodal';
 import EditSlotModal from './Editslotmodal';
 import '../../Css/Admin/Sitter/Fullcalendar.css';
 import '../../Css/Admin/Bigcalendar.css';
 import { enUS } from 'date-fns/locale';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
+
 
 const locales = {
   'en-US': enUS,
@@ -21,9 +16,9 @@ const locales = {
 
 const localizer = dateFnsLocalizer({
   format,
-  parse: (str, formatString, locale) => new Date(str),
+  parse: (str:string) => new Date(str),
   startOfWeek: () => new Date(),
-  getDay: (date) => date.getDay(),
+  getDay: (date:Date) => date.getDay(),
   locales,
 });
 
@@ -40,6 +35,7 @@ interface TimeSlot {
   _id: string;
   startTime: string;
   endTime: string;
+  error: string | null;
 }
 
 interface WeekendData {
@@ -62,14 +58,12 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
   const [showEditSlotModal, setShowEditSlotModal] = useState<boolean>(false);
   const toast = useToast();
 
-  const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
 
   useEffect(() => {
     updateEvents();
   }, [availableDates, offDates]);
 
-  const TIME_FORMAT = 'HH:mm:ss'; // Adjust format as 
-  
+
   const convertToLocalTime = (utcDateString: string, timeZone: string) => {
     const utcDate = new Date(utcDateString);
     return utcDate.toLocaleString('en-US', { timeZone });
@@ -78,7 +72,6 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
   const updateEvents = () => {
     const formattedEvents = availableDates.flatMap((availableDate) =>
       availableDate.timeslots.map((timeslot) => {
-        // Convert to user's local time zone
         const startTimeLocal = convertToLocalTime(timeslot.startTime, userTimeZone);
         const endTimeLocal = convertToLocalTime(timeslot.endTime, userTimeZone);
 
@@ -110,31 +103,38 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
   };
 
 
-  
-  
-  const handleDateSelect = (event: any) => {
-    const { start } = event;
-    const selected = formatInTimeZone(start, userTimeZone, 'yyyy-MM-dd\'T\'HH:mm:ssXXX');
 
+
+  const handleDateSelect = (slotInfo: { start: Date; end: Date; }) => {
+    const { start } = slotInfo;
+  
     const isDateOff = offDates.some((offDate) => {
-      const offDateTime = typeof offDate === 'string' ? formatInTimeZone(parseISO(offDate), userTimeZone, 'yyyy-MM-dd\'T\'HH:mm:ssXXX') : new Date(offDate);
-      return selected === offDateTime.toDateString();
+      const offDateObj = typeof offDate === 'string' ? new Date(offDate) : offDate;
+      return start.toDateString() === new Date(offDateObj).toDateString();
     });
-
+  
     if (isDateOff) {
-      console.log('Selected date is marked as off.');
-    } else {
-      setSelectedDate(new Date(selected));
-      setShowAddSlotModal(true);
+      toast({
+        title: "This date is marked as off.",
+        status: "warning",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
     }
+  
+    setSelectedDate(start);
+    setShowAddSlotModal(true);
   };
+  
+
 
   const handleModalClose = () => {
     setShowAddSlotModal(false);
     setSelectedDate(null);
   };
 
-  const handleEventClick = (event: any) => {
+  const handleEventClick = (event: Event) => {
     const { id } = event;
     if (!id.startsWith('off-')) {
       const selectedSlot = findSlotById(id);
@@ -165,14 +165,11 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
     setEditableSlot(null);
   };
 
-  const isWeekend = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6;
-  };
+  
 
   return (
     <div className="custom-calendar-container w-full flex justify-center">
-      <div className="w-full h-full overflow-hidden">
+      <div style={{ width: '90%' }} className="h-full overflow-hidden">
         <Calendar
           localizer={localizer}
           events={events}
@@ -180,24 +177,23 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
           endAccessor="end"
           selectable
           onSelectEvent={handleEventClick}
-          onSelectSlot={handleDateSelect}
+          onSelectSlot={handleDateSelect} 
           eventPropGetter={(event) => {
             const backgroundColor = event.color || 'green';
-            const style = {
-              backgroundColor,
-              color: 'white',
-            };
-            return {
-              style,
-            };
+            return { style: { backgroundColor, color: 'white' } };
           }}
+          views={['month']} 
+          popup={true} 
         />
       </div>
       {showAddSlotModal && selectedDate && (
-        <AddSlotModal
-          startDate={selectedDate}
-          onClose={handleModalClose}
-        />
+        <>
+          {console.log('Rendering AddSlotModal with selected date:', selectedDate)}
+          <AddSlotModal
+            startDate={selectedDate}
+            onClose={handleModalClose}
+          />
+        </>
       )}
       {showEditSlotModal && editableSlot && (
         <EditSlotModal

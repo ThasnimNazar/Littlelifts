@@ -53,7 +53,8 @@ const bookingSchema = new Schema<Booking>({
     }],
     isPaid: {
         type: Boolean,
-        required: true
+        required: true,
+        default:false
     },
     rejectionReason: {
         type: String,

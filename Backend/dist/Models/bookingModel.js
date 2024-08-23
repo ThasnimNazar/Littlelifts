@@ -33,7 +33,8 @@ const bookingSchema = new mongoose_1.Schema({
         }],
     isPaid: {
         type: Boolean,
-        required: true
+        required: true,
+        default: false
     },
     rejectionReason: {
         type: String,

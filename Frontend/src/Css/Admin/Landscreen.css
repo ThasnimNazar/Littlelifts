@@ -1,0 +1,19 @@
+.common-background { 
+    background-size: cover;
+    display: flex; /* Use flexbox for centering inner content */
+    flex-direction: column; /* Stack inner elements vertically */
+    align-items: center; /* Center align items horizontally */
+    justify-content: center; /* Center align items vertically */
+}
+
+.header-wrapper {
+    position: absolute;
+    top: 0;
+    width: 100%; 
+    z-index: 10; 
+}
+
+.inner-content {
+    z-index: 1; /* Ensure inner content is above the background image */
+    text-align: center; /* Center align text and content */
+}

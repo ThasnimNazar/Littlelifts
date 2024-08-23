@@ -6,6 +6,8 @@ import axios from 'axios'
 import { RootState } from '../../Store'
 import { setSitterCredentials } from '../../Slices/Sitterslice'
 import Header from '../../Header'
+import unauthApi from '../../Unauth'
+
 
 interface FormErrors {
     [key: string]: string;
@@ -18,7 +20,6 @@ const Sitterloginscreen : React.FC = () =>{
     const [password, setPassword] = useState<string>('')
 
     const { sitterInfo } = useSelector((state:RootState)=>state.sitterAuth)
-    const sitterId = sitterInfo?._id;
 
     const navigate = useNavigate()
     const toast = useToast()
@@ -38,12 +39,17 @@ const Sitterloginscreen : React.FC = () =>{
       }
       else{
           try{
-              const res = await axios.post('/api/sitter/login',{
+              const res = await unauthApi.post('/sitter/login',{
                   email,password
               })
               console.log(res.data.sitter)
+              const token = res.data.sitterToken;
+              console.log(token)
+              const role = res.data.sitter.role
               console.log(res)
               if( res.status=== 200){
+                localStorage.setItem('sitterToken',token)
+                localStorage.setItem('role',role)
                   dispatch(setSitterCredentials({ ...res.data.sitter }));     
                   toast({
                       title: 'Success',
@@ -92,28 +98,28 @@ const Sitterloginscreen : React.FC = () =>{
       }
       }
 
-      useEffect(()=>{
-        const fetchBlock = async()=>{
-           try{
-              const response = await axios.get('/api/sitter/check-block',{
-                 params:{ sitterId }
-              })
-              console.log(response)
-              dispatch(setSitterCredentials({ ...response.data.sitter }));
-           }
-           catch (error) {
-              toast({
-                  title: 'Error',
-                  description: 'An unknown error occurred',
-                  status: 'error',
-                  duration: 3000,
-                  isClosable: true,
-                  position: 'top-right',
-              });
-           }
-        }
-        fetchBlock()
-     },[])
+    //   useEffect(()=>{
+    //     const fetchBlock = async()=>{
+    //        try{
+    //           const response = await axios.get('/api/sitter/check-block',{
+    //              params:{ sitterId }
+    //           })
+    //           console.log(response)
+    //           dispatch(setSitterCredentials({ ...response.data.sitter }));
+    //        }
+    //        catch (error) {
+    //           toast({
+    //               title: 'Error',
+    //               description: 'An unknown error occurred',
+    //               status: 'error',
+    //               duration: 3000,
+    //               isClosable: true,
+    //               position: 'top-right',
+    //           });
+    //        }
+    //     }
+    //     fetchBlock()
+    //  },[])
 
      useEffect(()=>{
         if(sitterInfo && sitterInfo.blocked === false){

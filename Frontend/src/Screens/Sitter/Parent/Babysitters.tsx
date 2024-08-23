@@ -3,6 +3,9 @@ import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../../Store';
+import Reviewcard from '../../../Components/Parent/Reviewcard';
 import {
   useToast,
   Drawer,
@@ -15,17 +18,31 @@ import {
 import Header from '../../../Header';
 import Availabilitymodal from '../../../Components/Parent/Availabilitymodal';
 import { FiMail, FiPhone } from 'react-icons/fi';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHeart } from '@fortawesome/free-regular-svg-icons'
+import api from '../../../Axiosconfig'
+
+
 
 interface Babysitter {
   _id: string;
   name: string;
+  email: string;
   profileImage?: string;
   about: string;
   gender: string;
-  childcategory: { _id: string; name: string }[];
-  sittingcategory: { _id: string; name: string }[];
+  phoneno: number
+  childcategory: string[];
+  sittingcategory: string[];
+  selectedSittingOption: string;
   availableDates: string[];
+  activities: string[];
+  more: string[];
 }
+
+type Value = Date | Date[] | [Date | null, Date | null] | null;
+
+
 
 const Babysitters: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -34,8 +51,8 @@ const Babysitters: React.FC = () => {
   const [selectedGender, setSelectedGender] = useState<string>('');
 
   const [selectedBabysitter, setSelectedBabysitter] = useState<Babysitter | null>(null);
-  const [babysitters, setBabysitters] = useState<any[]>([]);
-  const [filteredBabysitters, setFilteredBabysitters] = useState<any[]>([]);
+  const [babysitters, setBabysitters] = useState<Babysitter[]>([]);
+  const [filteredBabysitters, setFilteredBabysitters] = useState<Babysitter[]>([]);
 
   const [childCategories, setChildCategories] = useState<{ _id: string; name: string }[]>([]);
   const [sittingCategories, setSittingCategories] = useState<{ _id: string; name: string }[]>([]);
@@ -47,9 +64,14 @@ const Babysitters: React.FC = () => {
   const itemsPerPage = 10;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState([]);
 
   const [parentLocation, setParentLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [paiduser, setPaiduser] = useState<boolean>(false)
+
+  const [favourites, setFavourites] = useState<{ [key: string]: boolean }>({})
+  const { parentInfo } = useSelector((state: RootState) => state.parentAuth)
+  const parentId = parentInfo?._id;
+
 
 
 
@@ -78,14 +100,15 @@ const Babysitters: React.FC = () => {
         });
       }
     );
-  }, []);
+  }, [toast]);
 
 
 
 
-  const handleSearchChange = (event) => {
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
   };
+
 
   console.log(parentLocation?.lat)
   console.log(parentLocation?.lng)
@@ -97,31 +120,36 @@ const Babysitters: React.FC = () => {
       if (parentLocation?.lat && parentLocation?.lng) {
         try {
           console.log("Parent location:", parentLocation);
-          const response = await axios.get('/api/parent/getsitter', {
+          const response = await api.get('/getsitter', {
             params: {
               lat: parentLocation.lat,
               lng: parentLocation.lng,
-              radius: 25, 
+              radius: 25,
               page: currentPage,
               limit: itemsPerPage,
             },
           });
-          console.log("Response:", response); 
+          console.log("Response:", response);
           setBabysitters(response.data.sitters);
           setFilteredBabysitters(response.data.sitters);
+
+          const totalItems = response.data.totalItems;
+          const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
+          setTotalPages(calculatedTotalPages);
+
         } catch (error) {
           handleAxiosError(error);
         }
       } else {
-        console.error("Parent location is not defined or incomplete"); 
+        console.error("Parent location is not defined or incomplete");
       }
     };
-  
+
     fetchBabysitters();
   }, [currentPage, itemsPerPage, parentLocation]);
-  
 
-  const handlePageChange = (newPage) => {
+
+  const handlePageChange = (newPage: number) => {
     console.log('Page change requested to:', newPage);
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -133,10 +161,10 @@ const Babysitters: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const childCategoryResponse = await axios.get('/api/parent/get-childcategory');
+        const childCategoryResponse = await api.get('/get-childcategory');
         setChildCategories(childCategoryResponse.data.category);
 
-        const sittingCategoryResponse = await axios.get('/api/parent/getsittingcat');
+        const sittingCategoryResponse = await api.get('/getsittingcat');
         setSittingCategories(sittingCategoryResponse.data.category);
       } catch (error) {
         handleAxiosError(error);
@@ -157,7 +185,7 @@ const Babysitters: React.FC = () => {
       const ids = selectedBabysitter.childcategory.map(category => category);
       const fetchCategories = async () => {
         try {
-          const categoryResponse = await axios.post('/api/parent/getnames', {
+          const categoryResponse = await api.post('/getnames', {
             ids: ids
           })
           console.log(categoryResponse, 'ggg')
@@ -227,26 +255,44 @@ const Babysitters: React.FC = () => {
     setFilteredBabysitters(filteredBabysitters);
   };
 
-  const handleDateChange = async (date: Date | Date[]) => {
+
+  const handleDateChange = async (date: Value) => {
     try {
       let isoDate: string;
 
+      if (date === null) return;
+
       if (Array.isArray(date)) {
-        const selectedDate = date[0];
-        isoDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-      } else {
+        if (date.length === 2 && date[0] !== null) {
+          const selectedDate = date[0];
+          isoDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+        } else if (date.length > 0 && date[0] instanceof Date) {
+          isoDate = `${date[0].getFullYear()}-${String(date[0].getMonth() + 1).padStart(2, '0')}-${String(date[0].getDate()).padStart(2, '0')}`;
+        } else {
+          return;
+        }
+      } else if (date instanceof Date) {
         isoDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      } else {
+        return;
       }
 
       console.log('Selected ISO Date:', isoDate);
 
-      const response = await axios.get(`/api/parent/filter-ByDate?selectedDate=${isoDate}`);
+      const response = await api.get(`/filter-ByDate?selectedDate=${isoDate}`);
       setFilteredBabysitters(response.data.babysitters);
-      setSelectedDate(Array.isArray(date) ? date[0] as Date : date as Date);
+      setSelectedDate(Array.isArray(date) ? (date[0] as Date) : (date as Date));
     } catch (error) {
       handleAxiosError(error);
     }
   };
+
+
+
+
+
+
+
   console.log(filteredBabysitters, 'hhh')
 
 
@@ -254,7 +300,7 @@ const Babysitters: React.FC = () => {
     handleFilterChange();
   }, [selectedGender, selectedChildCategory, selectedSittingCategory]);
 
-  const handleAxiosError = (error: any) => {
+  const handleAxiosError = (error: unknown) => {
     if (axios.isAxiosError(error) && error.response) {
       toast({
         title: 'Error',
@@ -276,11 +322,69 @@ const Babysitters: React.FC = () => {
     }
   };
 
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const response = await api.get(`/get-user/${parentId}`)
+        console.log(response.data.userSubscription, 'sub')
+        if (response.data.userSubscription.isPaid === true) {
+          console.log('true')
+          setPaiduser(true)
+        }
+      }
+      catch (error) {
+        handleAxiosError(error);
+      }
+    }
+    getUser()
+  }, [])
+
   console.log(selectedBabysitter, 'ssss')
 
   const submitBooking = () => {
     navigate('/parent/confirmbooking', { state: { selectedBabysitter: selectedBabysitter } })
   }
+
+  const handleFavourite = async (sitterId: string) => {
+    try {
+      const isFavourite = favourites[sitterId];
+      if (isFavourite) {
+        const response = await api.put(`/remove-favourites/${parentId}`, {
+          sitterId,
+        })
+        if (response.status === 200) {
+          setFavourites((prevFavourites) => {
+            const newFavourites = { ...prevFavourites };
+            delete newFavourites[sitterId];
+            return newFavourites;
+          });
+        }
+
+      } else {
+        const response = await api.post(`/add-favourites`, {
+          sitterId: sitterId,
+          parentId: parentId
+        });
+        if (response.status === 200) {
+          setFavourites((prevFavourites) => ({
+            ...prevFavourites,
+            [sitterId]: true,
+          }));
+        }
+      }
+    } catch (error) {
+      handleAxiosError(error);
+    }
+  };
+
+  // useEffect(()=>{
+  //   if(!parentInfo){
+  //     navigate('/parent/parentlogin')
+  //   }else if(!sitterInfo){
+  //     navigate('/sitter/sitterlogin')
+  //   }
+  // },[])
 
 
 
@@ -329,6 +433,7 @@ const Babysitters: React.FC = () => {
             value={selectedDate}
             minDate={new Date()}
           />
+
         </div>
         <div className="w-3/4 p-2 ml-10">
           <div className="container mx-auto">
@@ -380,6 +485,15 @@ const Babysitters: React.FC = () => {
               <div className="grid grid-cols-3 gap-4 mt-4">
                 {filteredBabysitters.map((babysitter) => (
                   <div key={babysitter._id} className="border p-4 rounded-lg bg-white shadow">
+                    {paiduser &&
+                      <FontAwesomeIcon
+                        icon={faHeart}
+                        className='cursor-pointer'
+                        onClick={() => handleFavourite(babysitter._id)}
+                        style={{ color: favourites[babysitter._id] ? 'red' : 'gray' }}
+                      />
+                    }
+                    <br></br>
                     <div className="relative w-full h-36 overflow-hidden rounded-lg">
                       <img
                         className="absolute inset-0 w-full h-full object-cover object-center"
@@ -497,7 +611,10 @@ const Babysitters: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                  <Reviewcard sitterId={selectedBabysitter._id} />
+
                   <br></br>
+
                   <div className='flex justify-center'>
                     <button onClick={submitBooking} className='bg-black py-2 px-4 rounded-full text-white font-mono'>Book now</button>
                   </div>

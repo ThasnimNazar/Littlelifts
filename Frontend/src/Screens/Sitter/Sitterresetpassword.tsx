@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import axios from 'axios'
 import { RootState } from '../../Store'
+import api from '../../Axiosconfig';
+
 
 interface FormErrors {
     [key: string]: string;
@@ -41,7 +43,7 @@ const Sitterresetpassword : React.FC = () =>{
             } else
             {
         try{
-          const response = await axios.post('/api/sitter/reset-password',{
+          const response = await api.post('/reset-password',{
             password,confirmPassword
           })
           if(response.status === 200){

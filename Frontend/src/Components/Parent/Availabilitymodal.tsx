@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import {
@@ -12,20 +11,35 @@ import {
   ModalFooter,
   Button,
 } from '@chakra-ui/react';
+import api from '../../Axiosconfig'
 
-const AvailabilityCalendar = ({ isOpen, onClose, babysitterId }) => {
-  const [events, setEvents] = useState([]);
+interface AvailabilityCalendarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  babysitterId: string;
+}
+
+type CalendarEvent = {
+  title: string;
+  start: string | Date;
+  allDay?: boolean;
+  backgroundColor?: string;
+  borderColor?: string;
+};
+
+const AvailabilityCalendar:React.FC<AvailabilityCalendarProps> = ({ isOpen, onClose, babysitterId }) => {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
         console.log(babysitterId,'id')
-        const response = await axios.get(`/api/parent/get-availabledates/${babysitterId}`);
+        const response = await api.get(`/get-availabledates/${babysitterId}`);
         console.log(response)
         const { availableDates, offDates } = response.data;
         console.log(availableDates,offDates)
 
-        const availabilityEvents = availableDates.map(dateObj => ({
+        const availabilityEvents: CalendarEvent[] = availableDates.map((dateObj: string) => ({
           title: 'Available',
           start: dateObj,
           allDay: true,
@@ -35,7 +49,7 @@ const AvailabilityCalendar = ({ isOpen, onClose, babysitterId }) => {
 
         console.log(availabilityEvents)
 
-        const offEvents = offDates.map(date => ({
+        const offEvents: CalendarEvent[] = offDates.map((date: string) => ({
           title: 'Not Available',
           start: date, 
           allDay: true, 
@@ -43,7 +57,6 @@ const AvailabilityCalendar = ({ isOpen, onClose, babysitterId }) => {
           borderColor: 'red',
         }));
 
-        // Set events in state
         setEvents([...availabilityEvents, ...offEvents]);
       } catch (error) {
         console.error('Error fetching availability:', error);

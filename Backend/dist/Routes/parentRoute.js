@@ -19,9 +19,11 @@ parentroute.post('/resendotp', authMiddleware_1.protectParent, parentController_
 parentroute.post('/logout', parentController_1.parentLogout);
 parentroute.get('/profile/:parentId', authMiddleware_1.protectParent, parentController_1.getProfile);
 parentroute.get('/get-childcategory', categoryController_1.getAllchildCategory);
+parentroute.get('/get-allreviews', parentController_1.getAllreviews);
 parentroute.put('/edit-profile/:parentId', authMiddleware_1.protectParent, authMiddleware_1.protectParent, parentController_1.editProfile);
 parentroute.get('/getsittingcat', authMiddleware_1.protectParent, categoryController_1.getAllsittingCategory);
-parentroute.get('/getsitter', authMiddleware_1.protectParent, parentController_1.listSitter);
+parentroute.get('/getsitter', parentController_1.listSitter);
+parentroute.post('/webhook', express_1.default.raw({ type: 'application/json' }), bookingController_1.handleStripeWebhook);
 parentroute.get('/search-babysitters', authMiddleware_1.protectParent, parentController_1.searchBabysitters);
 parentroute.get('/filter-ByDate', authMiddleware_1.protectParent, parentController_1.filterBabysittersByDate);
 parentroute.get('/get-availabledates/:sitterId', authMiddleware_1.protectParent, parentController_1.getAvailabledates);
@@ -32,8 +34,19 @@ parentroute.get('/booked-sitters/:parentId', authMiddleware_1.protectParent, boo
 parentroute.post('/createchat', authMiddleware_1.protectParent, parentController_1.createChat);
 parentroute.get('/get-messages/:chatId', authMiddleware_1.protectParent, parentController_1.getMessages);
 parentroute.post('/send-message', authMiddleware_1.protectParent, parentController_1.sendMessage);
-parentroute.post('/mark-seen', authMiddleware_1.protectParent, parentController_1.markSeen);
+// parentroute.post('/mark-seen',protectParent,markSeen)
 parentroute.post('/post-review', authMiddleware_1.protectParent, parentController_1.postReview);
 parentroute.get('/check-block', authMiddleware_1.protectParent, parentController_1.isBlocked);
+parentroute.get('/get-subscriptions', parentController_1.getSubscription);
+parentroute.post('/confirm-subscription/:subscriptionId', authMiddleware_1.protectParent, bookingController_1.confirmSubscription);
+parentroute.post('/add-favourites', authMiddleware_1.protectParent, parentController_1.addFavourites);
+parentroute.put('/remove-favourites/:parentId', authMiddleware_1.protectParent, parentController_1.removeFavourites);
+parentroute.get('/get-favourites/:parentId', authMiddleware_1.protectParent, parentController_1.getFavourites);
+parentroute.get('/get-user/:parentId', authMiddleware_1.protectParent, parentController_1.getUser);
+parentroute.get('/get-reviews/:sitterId', authMiddleware_1.protectParent, parentController_1.getReviews);
 parentroute.post('/getnames', authMiddleware_1.protectParent, parentController_1.getName);
+parentroute.post('/last-seen/:parentId', authMiddleware_1.protectParent, parentController_1.updateLastseen);
+parentroute.get('/get-lastseen', authMiddleware_1.protectParent, parentController_1.lastSeen);
+parentroute.get('/get-lastmsg', authMiddleware_1.protectParent, parentController_1.getLastmessage);
+parentroute.put('/update-lastseen/:parentId', authMiddleware_1.protectParent, parentController_1.updateSeen);
 exports.default = parentroute;

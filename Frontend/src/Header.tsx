@@ -1,25 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@chakra-ui/react';
-import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState } from './Store';
 import './Css/Admin/notification.css'
 import Notificationtab from './Components/Parent/Notificationtab';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMessage } from '@fortawesome/free-regular-svg-icons';
+
+
 import { useNavigate } from 'react-router-dom';
+import api from "./Axiosconfig";
+import useSocket from './Components/Socket/Usesocket';
+
+
+interface CustomNotification {
+  message: string;
+  bookingDetails: {
+    sitterName: string;
+  };
+  read: boolean;
+}
+
+
 
 const Header: React.FC = () => {
   const [opensitter, setOpensitter] = useState<boolean>(false);
   const [openparent, setOpenparent] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<CustomNotification[]>([]);
   const [isDropdownOpen, setDropdownOpen] = useState<boolean>(false);
   const [profileImageurl, setProfileimageurl] = useState<string>('');
-  const [notificationVisible, setNotificationVisible] = useState<boolean>(false); 
+  const [notificationVisible, setNotificationVisible] = useState<boolean>(false);
+  const [paiduser, setPaiduser] = useState<boolean>(false)
+
   const toast = useToast();
   const navigate = useNavigate();
+  const socket = useSocket();
 
   const { parentInfo } = useSelector((state: RootState) => state.parentAuth);
+  const parentId = parentInfo?._id;
 
   const toggleDropdown = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -40,16 +57,40 @@ const Header: React.FC = () => {
     setNotificationVisible(!notificationVisible);
   };
 
-  const submitChat = () =>{
+  const submitChat = () => {
     navigate('/parent/chat')
   }
+
+  useEffect(() => {
+    if (socket) {
+      console.log('ha');
+      socket.on('bookingApproval', (notification: CustomNotification) => {
+        const newNotification = { ...notification, read: false };
+        setNotifications((prevNotifications) => [newNotification, ...prevNotifications]);
+        console.log(`Notification sent to parentId ${parentId}:`, newNotification);
+      });
+
+      socket.on('bookingRejected', (notification: CustomNotification) => {
+        const newNotification = { ...notification, read: false };
+        setNotifications((prevNotifications) => [newNotification, ...prevNotifications]);
+        console.log(`Notification sent to parentId ${parentId}:`, newNotification);
+      });
+
+
+      socket.emit('joinParentRoom', parentId);
+      return () => {
+        socket.off('bookingApproval');
+      };
+    }
+  }, [socket, parentId]);
+
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!parentInfo?._id) return;
 
       try {
-        const response = await axios.get(`/api/parent/profile/${parentInfo?._id}`);
+        const response = await api.get(`/profile/${parentInfo?._id}`);
         setProfileimageurl(response.data.parent.profileImage);
       } catch (error) {
         toast({
@@ -79,9 +120,36 @@ const Header: React.FC = () => {
     };
   }, [isDropdownOpen]);
 
+
+  useEffect(() => {
+    const getUser = async () => {
+      if (parentInfo) {
+        try {
+          const response = await api.get(`/get-user/${parentId}`)
+          console.log(response.data.userSubscription, 'sub')
+          if (response.data.userSubscription.isPaid === true) {
+            console.log('true')
+            setPaiduser(true)
+          }
+        }
+        catch (error) {
+          toast({
+            title: 'Error',
+            description: error instanceof Error ? error.message : 'An unknown error occurred',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
+            position: 'top-right',
+          });
+        }
+      }
+    }
+    getUser()
+  }, [])
+
   return (
     <>
-      <header className="sticky top-0 z-50 shadow bg-white">
+      <header className='bg-black/30 z-50'>
         <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {parentInfo ? (
@@ -91,7 +159,7 @@ const Header: React.FC = () => {
                     <ul className="flex items-center gap-6 text-sm">
                       <li key="home">
                         <a
-                          className="transition font-mono font-semibold text-lg hover:text-black text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           href="/"
                         >
                           Home
@@ -99,7 +167,7 @@ const Header: React.FC = () => {
                       </li>
                       <li key="about">
                         <a
-                          className="transition hover:text-pink-200 font-mono font-semibold text-lg text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           href="#"
                         >
                           About
@@ -107,7 +175,7 @@ const Header: React.FC = () => {
                       </li>
                       <li key="babysitters">
                         <a
-                          className="transition font-mono font-semibold text-lg hover:text-black text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           href="/parent/babysitters"
                         >
                           Babysitters
@@ -115,7 +183,7 @@ const Header: React.FC = () => {
                       </li>
                       <li key="contact">
                         <a
-                          className="transition font-mono font-semibold text-lg hover:text-black text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           href="#"
                         >
                           Contact
@@ -127,19 +195,29 @@ const Header: React.FC = () => {
 
                 <div className="flex items-center gap-6">
                   <div className="relative flex items-center gap-2">
-                    <div>
-                    <FontAwesomeIcon icon={faMessage}  style={{height:'25px',cursor:'pointer'}} onClick={submitChat} />
-                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" onClick={submitChat} style={{ cursor: 'pointer' }} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                    </svg>
+
                     <div className='relative'>
                       <button className="button" onClick={toggleNotificationDropdown}>
-                        <svg viewBox="0 0 448 512" className="bell"><path d="M224 0c-17.7 0-32 14.3-32 32V49.9C119.5 61.4 64 124.2 64 200v33.4c0 45.4-15.5 89.5-43.8 124.9L5.3 377c-5.8 7.2-6.9 17.1-2.9 25.4S14.8 416 24 416H424c9.2 0 17.6-5.3 21.6-13.6s2.9-18.2-2.9-25.4l-14.9-18.6C399.5 322.9 384 278.8 384 233.4V200c0-75.8-55.5-138.6-128-150.1V32c0-17.7-14.3-32-32-32zm0 96h8c57.4 0 104 46.6 104 104v33.4c0 47.9 13.9 94.6 39.7 134.6H72.3C98.1 328 112 281.3 112 233.4V200c0-57.4 46.6-104 104-104h8zm64 352H224 160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7s18.7-28.3 18.7-45.3z"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                        </svg>
                       </button>
                     </div>
                     {notificationVisible && (
                       <div className="notification-dropdown absolute right-0 top-full mt-2 w-80 bg-white border rounded-md shadow-lg z-10">
-                        <Notificationtab />
+                        <Notificationtab notifications={notifications} />
                       </div>
                     )}
+                    {!paiduser &&
+                      <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
+                        </svg>
+                      </div>
+                    }
                     <div>
                       {profileImageurl ? (
                         <img
@@ -180,7 +258,7 @@ const Header: React.FC = () => {
                     <ul className="flex items-center gap-6 text-sm">
                       <li key="home">
                         <Link
-                          className="transition font-mono font-semibold text-lg hover:text-black text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           to="/"
                         >
                           Home
@@ -188,23 +266,15 @@ const Header: React.FC = () => {
                       </li>
                       <li key="about">
                         <Link
-                          className="transition hover:text-pink-200 font-mono font-semibold text-lg text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           to="#"
                         >
                           About
                         </Link>
                       </li>
-                      <li key="babysitters">
-                        <Link
-                          className="transition font-mono font-semibold text-lg hover:text-black text-sky-800"
-                          to="/parent/babysitters"
-                        >
-                          Babysitters
-                        </Link>
-                      </li>
                       <li key="contact">
                         <Link
-                          className="transition font-mono font-semibold text-lg hover:text-black text-sky-800"
+                          className="transition font-mono font-semibold text-lg text-white hover:underline"
                           to="#"
                         >
                           Contact

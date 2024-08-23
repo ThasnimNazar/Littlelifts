@@ -5,6 +5,8 @@ import { RootState } from '../../../Store';
 import useSocket from '../../../Components/Socket/Usesocket';
 import Chatsidebar from '../../../Components/Parent/Chatsidebar';
 import ChatBubble from '../../../Components/Parent/Chatbubble';
+import api from '../../../Axiosconfig'
+
 
 interface BabySitter {
   _id: string;
@@ -44,7 +46,7 @@ const Chatscreen: React.FC = () => {
           const chatData = response.data;
           setChatId(chatData._id);
 
-          const messagesResponse = await axios.get(`/api/parent/get-messages/${chatData._id}`);
+          const messagesResponse = await api.get(`/get-messages/${chatData._id}`);
           setChatMessages(messagesResponse.data.messages);
 
           if (socket) {
@@ -116,7 +118,7 @@ const Chatscreen: React.FC = () => {
           formData.append('audio', audio);
         }
 
-        const response = await axios.post('/api/parent/send-message', formData, {
+        const response = await api.post('/send-message', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -136,7 +138,7 @@ const Chatscreen: React.FC = () => {
 
   const handleMarkSeen = () => {
     if (chatId && parentId) {
-      axios.post('/api/parent/mark-seen', { chatId, userId: parentId });
+      api.post('/mark-seen', { chatId, userId: parentId });
       if (socket) {
         socket.emit('markSeen', { chatId, userId: parentId });
       }

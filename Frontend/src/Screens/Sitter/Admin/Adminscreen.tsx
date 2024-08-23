@@ -1,11 +1,14 @@
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useSelector,useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import Sidebar from '../../../Components/Admin/Sidebar';
 import Adminheader from '../../../Layouts/Adminlayouts/Adminheader';
 import '../../../Css/Admin/Adminscreen.css'
-import { setCredentials,logout } from '../../../Slices/Adminslice';
+import { logout } from '../../../Slices/Adminslice';
 import { useLogoutadminMutation } from '../../../Slices/Adminapislice';
+import '../../../Css/Admin/Dashboard.css'
+import '../../../Css/Admin/Body.css'
+
 
 
 const Adminscreen: React.FC = () => {
@@ -30,6 +33,14 @@ const Adminscreen: React.FC = () => {
     navigate('/admin/adminhome/manage-childcategories');
   }
 
+  const handleSubscriptionplan =() =>{
+    navigate('/admin/adminhome/manage-subscription')
+  }
+
+  const handleDashboard =() =>{
+    navigate('/admin/adminhome')
+  }
+
   const handleLogoutClick = async () => {
     try {
       await logoutApi({}).unwrap();
@@ -49,6 +60,8 @@ const Adminscreen: React.FC = () => {
         onManageCategoriesClick={handleManageCategoriesClick}
         onManageChildCategoriesClick={handleChildCategoriesClick}
         onLogoutClick={handleLogoutClick}
+        onManageSubscriptions={handleSubscriptionplan}
+        handleDashboard={handleDashboard}
       />
       <div className="admin-content"> 
         <Outlet />

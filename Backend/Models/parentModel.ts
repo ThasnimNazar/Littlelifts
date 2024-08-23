@@ -8,7 +8,10 @@ export interface ParentModel extends Document<Types.ObjectId>{
     noofchildrens: number;
     selectedchildcategory: Types.ObjectId;
     profileImage:string;
-    blocked:boolean;   
+    blocked:boolean;
+    lastseen:Date;
+    role:string;
+    bookingCount:number;  
 }
 
 const parentSchema = new Schema<ParentModel>({
@@ -40,6 +43,18 @@ const parentSchema = new Schema<ParentModel>({
     blocked:{
         type:Boolean,
         default:false
+    },
+    lastseen:{
+        type:Date,
+        default:Date.now()
+    },
+    role: { 
+        type: String, 
+        default: 'parent' 
+    },
+    bookingCount: { 
+        type: Number, 
+        default: 0 
     },
     
 });

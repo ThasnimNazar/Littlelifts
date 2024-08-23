@@ -14,7 +14,11 @@ const adminSchema = new mongoose_1.Schema({
     password: {
         type: String,
         required: true
-    }
+    },
+    role: {
+        type: String,
+        default: 'parent'
+    },
 });
 const Admin = (0, mongoose_1.model)('Admin', adminSchema);
 exports.default = Admin;

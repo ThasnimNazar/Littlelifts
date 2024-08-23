@@ -4,15 +4,14 @@ import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { useToast } from "@chakra-ui/react"
 import { RootState } from "../../../Store"
-import Loader from "../../../Loader"
 import Header from "../../../Header"
+import api from '../../../Axiosconfig'
+
 
 
 const Forgetpasswordscreen : React.FC = () =>{
     const [email,setEmail] = useState<string>('')
-    const [parent,setParent] = useState<string>('')
     const { parentInfo } = useSelector((state:RootState)=>state.parentAuth)
-    const parentId = parentInfo?._id;
     const navigate = useNavigate()
     const toast = useToast()
 
@@ -20,7 +19,7 @@ const Forgetpasswordscreen : React.FC = () =>{
     const submitHandler = async(e:React.FormEvent<HTMLFormElement>)=>{
         e.preventDefault()
         try {
-            const response = await axios.post('/api/parent/forget-password', { email });
+            const response = await api.post('/forget-password', { email });
            if(response.status === 200){
             toast({
                 title: 'Success',
@@ -62,7 +61,7 @@ const Forgetpasswordscreen : React.FC = () =>{
         if(parentInfo){
             navigate('/parent/parenthome')
         }
-    },[])
+    },[parentInfo])
 
     return(
         <>

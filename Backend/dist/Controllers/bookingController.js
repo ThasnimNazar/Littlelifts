@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBookedparents = exports.getBookedsitters = exports.handleStripeWebhook = exports.bookingRejection = exports.bookingApproval = exports.confirmBooking = void 0;
+exports.confirmSubscription = exports.getBookedparents = exports.getBookedsitters = exports.handleStripeWebhook = exports.bookingRejection = exports.bookingApproval = exports.confirmBooking = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = require("mongoose");
 const sitterModel_1 = __importDefault(require("../Models/sitterModel"));
@@ -25,6 +25,9 @@ const occasionalsittingModel_1 = __importDefault(require("../Models/occasionalsi
 const specialcareModel_1 = __importDefault(require("../Models/specialcareModel"));
 const walletModel_1 = __importDefault(require("../Models/walletModel"));
 const socket_1 = require("../Connections/socket");
+const subscriptionModel_1 = __importDefault(require("../Models/subscriptionModel"));
+const usersubscriptionModel_1 = __importDefault(require("../Models/usersubscriptionModel"));
+const chatModel_1 = __importDefault(require("../Models/chatModel"));
 function stripSeconds(date) {
     const newDate = new Date(date);
     newDate.setSeconds(0, 0);
@@ -34,12 +37,10 @@ const confirmBooking = (req, res) => __awaiter(void 0, void 0, void 0, function*
     try {
         const { sitterId } = req.params;
         let { selectedDate, startTime, endTime } = req.body;
-        console.log(startTime, endTime, 'booked times');
         const sitterObjectId = new mongoose_1.Types.ObjectId(sitterId);
-        console.log(req.body, 'body');
         const sitter = yield sitterModel_1.default.findById({ _id: sitterObjectId });
         if (!sitter) {
-            res.status(404).json({ message: 'sitter not found' });
+            res.status(404).json({ message: 'Sitter not found' });
             return;
         }
         if (!req.parent) {
@@ -49,17 +50,7 @@ const confirmBooking = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const parentId = req.parent._id;
         const parent = yield parentModel_1.default.findById({ _id: parentId });
         if (!parent) {
-            res.status(404).json({ message: 'parent not found' });
-            return;
-        }
-        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-        if (!stripeSecretKey) {
-            res.status(500).json({ message: 'Stripe secret key not configured' });
-            return;
-        }
-        const clientUrl = process.env.CLIENT_SITE_URL;
-        if (!clientUrl) {
-            res.status(500).json({ message: 'client url not configured' });
+            res.status(404).json({ message: 'Parent not found' });
             return;
         }
         const availability = yield (0, slotHelper_1.checkAvailability)({
@@ -72,8 +63,46 @@ const confirmBooking = (req, res) => __awaiter(void 0, void 0, void 0, function*
             res.status(400).json({ message: availability.message });
             return;
         }
+        const userSubscription = yield usersubscriptionModel_1.default.findOne({ userId: parentId, isPaid: true });
+        console.log(userSubscription, 'sub');
+        if (userSubscription) {
+            const booking = new bookingModel_1.default({
+                sitter: sitter._id,
+                parent: parent._id,
+                servicepay: sitter.servicepay,
+                status: 'Pending',
+                isPaid: true,
+                selectedDate,
+                timeSlot: {
+                    startTime,
+                    endTime
+                }
+            });
+            yield booking.save();
+            const io = (0, socket_1.getSocketIOInstance)();
+            io.to(`babysitter_${sitter._id}`).emit('bookingNotification', {
+                message: 'You have a new booking!',
+                bookingDetails: {
+                    selectedDate,
+                    startTime,
+                    endTime,
+                    parentName: parent.name,
+                },
+            });
+            res.status(200).json({ booking });
+            return;
+        }
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            res.status(500).json({ message: 'Stripe secret key not configured' });
+            return;
+        }
+        const clientUrl = process.env.CLIENT_SITE_URL;
+        if (!clientUrl) {
+            res.status(500).json({ message: 'Client URL not configured' });
+            return;
+        }
         const stripe = new stripe_1.default(stripeSecretKey);
-        //create stripe checkout session
         const session = yield stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'payment',
@@ -89,28 +118,37 @@ const confirmBooking = (req, res) => __awaiter(void 0, void 0, void 0, function*
                         product_data: {
                             name: sitter.name,
                             description: sitter.about,
-                            images: [sitter.profileImage]
-                        }
+                            images: [sitter.profileImage],
+                        },
                     },
-                    quantity: 1
-                }
-            ]
+                    quantity: 1,
+                },
+            ],
         });
         const booking = new bookingModel_1.default({
             sitter: sitter._id,
             parent: parent._id,
             servicepay: sitter.servicepay,
-            status: ['Pending'],
+            status: 'Pending',
             isPaid: false,
             sessionId: session.id,
             selectedDate,
             timeSlot: {
                 startTime,
-                endTime
-            }
+                endTime,
+            },
         });
+        console.log(session.payment_intent, 'ss');
+        if (typeof session.payment_intent === 'string') {
+            booking.chargeId = session.payment_intent;
+        }
+        else if (session.payment_intent && typeof session.payment_intent === 'object') {
+            booking.chargeId = session.payment_intent.id;
+        }
+        else {
+            booking.chargeId = '';
+        }
         yield booking.save();
-        console.log(booking, 'book');
         const io = (0, socket_1.getSocketIOInstance)();
         io.to(`babysitter_${sitter._id}`).emit('bookingNotification', {
             message: 'You have a new booking!',
@@ -121,7 +159,8 @@ const confirmBooking = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 parentName: parent.name,
             },
         });
-        res.status(200).json({ message: 'booked successfully', session });
+        res.status(200).json({ message: 'Booking created. Please complete payment.', session });
+        return;
     }
     catch (error) {
         if (error instanceof Error) {
@@ -139,6 +178,7 @@ const bookingApproval = (0, express_async_handler_1.default)((req, res) => __awa
     try {
         const { bookingId } = req.params;
         const booking = yield bookingModel_1.default.findById(bookingId);
+        console.log(booking, 'book');
         if (!booking) {
             res.status(404).json({ message: 'Booking not found' });
             return;
@@ -187,11 +227,11 @@ const bookingApproval = (0, express_async_handler_1.default)((req, res) => __awa
         const timeSlot = dateSlot.timeslots.find((ts) => compareTimes(new Date(ts.startTime), new Date(booking.timeSlot.startTime)) &&
             compareTimes(new Date(ts.endTime), new Date(booking.timeSlot.endTime)));
         console.log(timeSlot, 'tiiiii');
-        if (!timeSlot) {
+        if (!timeSlot && timeSlot === 'undefined') {
             res.status(404).json({ message: 'Time slot not found' });
             return;
         }
-        timeSlot.status = 'unavailable';
+        timeSlot.bookingStatus = 'approved';
         yield slot.save();
         console.log(slot, 'sloooooo');
         const io = (0, socket_1.getSocketIOInstance)();
@@ -279,7 +319,115 @@ const bookingRejection = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.bookingRejection = bookingRejection;
+const confirmSubscription = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { subscriptionId } = req.params;
+        const selectedPlan = yield subscriptionModel_1.default.findById(subscriptionId);
+        console.log(selectedPlan, 'plan');
+        if (!selectedPlan) {
+            res.status(404).json({ message: "plan not found" });
+        }
+        const price = selectedPlan === null || selectedPlan === void 0 ? void 0 : selectedPlan.price;
+        const name = selectedPlan === null || selectedPlan === void 0 ? void 0 : selectedPlan.name;
+        if (price === undefined || price === null) {
+            return res.status(400).json({ message: "Plan price is not defined" });
+        }
+        if (name === undefined || name === null) {
+            return res.status(400).json({ message: "Plan name is not defined" });
+        }
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            res.status(500).json({ message: 'Stripe secret key not configured' });
+            return;
+        }
+        const clientUrl = process.env.CLIENT_SITE_URLS;
+        if (!clientUrl) {
+            res.status(500).json({ message: 'client url not configured' });
+            return;
+        }
+        if (!req.parent) {
+            res.status(401).json({ message: 'Parent not authenticated' });
+            return;
+        }
+        const parentId = req.parent._id;
+        const parent = yield parentModel_1.default.findById({ _id: parentId });
+        if (!parent) {
+            res.status(404).json({ message: 'Parent not found' });
+            return;
+        }
+        const stripe = new stripe_1.default(stripeSecretKey);
+        if (selectedPlan && selectedPlan.price === 0) {
+            const newSubscription = new usersubscriptionModel_1.default({
+                userId: parent._id,
+                planId: subscriptionId,
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                status: ['Active'],
+                credit: 0,
+                isPaid: false,
+                autoRenewal: false,
+                paymentMethod: 'Free',
+                paymentHistory: [],
+            });
+            yield newSubscription.save();
+            res.status(200).json({ message: 'Subscribed to Free Tier successfully' });
+        }
+        else {
+            const session = yield stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                mode: 'subscription',
+                success_url: `${clientUrl}`,
+                cancel_url: `${req.protocol}://${req.get('host')}/subscription-cancel`,
+                customer_email: parent.email,
+                client_reference_id: subscriptionId,
+                line_items: [
+                    {
+                        price_data: {
+                            currency: 'inr',
+                            unit_amount: price * 100,
+                            recurring: {
+                                interval: 'month',
+                            },
+                            product_data: {
+                                name: name,
+                            }
+                        },
+                        quantity: 1
+                    }
+                ],
+            });
+            const newSubscription = new usersubscriptionModel_1.default({
+                userId: parent._id,
+                planId: subscriptionId,
+                startDate: new Date(),
+                status: ['Active'],
+                isPaid: true,
+                sessionId: session.id,
+                paymentMethod: 'Card',
+                paymentHistory: [{
+                        amount: price,
+                        date: Date.now(),
+                        method: 'card'
+                    }],
+            });
+            yield newSubscription.save();
+            res.status(200).json({ message: 'Subscription initiated successfully', session });
+        }
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+});
+exports.confirmSubscription = confirmSubscription;
 const handleStripeWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('webhook');
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     console.log(stripeSecretKey, 'stripe key');
     if (!stripeSecretKey) {
@@ -290,6 +438,7 @@ const handleStripeWebhook = (req, res) => __awaiter(void 0, void 0, void 0, func
     let event;
     try {
         event = req.body;
+        console.log(event, 'event');
         switch (event.type) {
             case 'checkout.session.completed':
                 const session = event.data.object;
@@ -379,6 +528,50 @@ const handleStripeWebhook = (req, res) => __awaiter(void 0, void 0, void 0, func
                     yield updatedBooking.save();
                 }
                 break;
+            case 'invoice.payment_succeeded':
+                const invoice = event.data.object;
+                const subscriptionId = invoice.subscription;
+                const customerId = invoice.customer;
+                const paymentIntentForInvoice = yield stripe.paymentIntents.retrieve(invoice.payment_intent);
+                const subscription = yield stripe.subscriptions.retrieve(subscriptionId);
+                const userSubscription = yield usersubscriptionModel_1.default.findOne({ planId: subscriptionId });
+                if (userSubscription) {
+                    userSubscription.status = ['Active'];
+                    userSubscription.endDate = new Date(subscription.current_period_end * 1000);
+                    yield userSubscription.save();
+                }
+                else {
+                    const newSubscription = new usersubscriptionModel_1.default({
+                        userId: customerId,
+                        planId: subscriptionId,
+                        startDate: new Date(subscription.current_period_start * 1000),
+                        endDate: new Date(subscription.current_period_end * 1000),
+                        status: ['Active'],
+                        credit: 0,
+                        autoRenewal: subscription.cancel_at_period_end === false,
+                        paymentMethod: paymentIntentForInvoice.payment_method,
+                        paymentHistory: [{ amount: invoice.amount_paid / 100, date: new Date(), method: 'Stripe' }],
+                    });
+                    yield newSubscription.save();
+                }
+                break;
+            case 'invoice.payment_failed':
+                const failedInvoice = event.data.object;
+                const failedSubscriptionId = failedInvoice.subscription;
+                const failedUserSubscription = yield usersubscriptionModel_1.default.findOne({ planId: failedSubscriptionId });
+                if (failedUserSubscription) {
+                    failedUserSubscription.status = ['Inactive'];
+                    yield failedUserSubscription.save();
+                }
+                break;
+            case 'customer.subscription.deleted':
+                const deletedSubscription = event.data.object;
+                const canceledSubscription = yield usersubscriptionModel_1.default.findOne({ planId: deletedSubscription.id });
+                if (canceledSubscription) {
+                    canceledSubscription.status = ['Cancelled'];
+                    yield canceledSubscription.save();
+                }
+                break;
             default:
                 console.log(`Unhandled event type ${event.type}`);
         }
@@ -399,7 +592,28 @@ const getBookedsitters = (0, express_async_handler_1.default)((req, res) => __aw
             path: 'sitter',
             select: '-password',
         });
-        res.status(200).json({ sitter: findSitters });
+        const uniqueSitters = new Map();
+        yield Promise.all(findSitters.map((booking) => __awaiter(void 0, void 0, void 0, function* () {
+            const sitterId = booking.sitter._id.toString();
+            if (uniqueSitters.has(sitterId)) {
+                return;
+            }
+            const chat = yield chatModel_1.default.findOne({
+                participants: { $all: [sitterId, parentId] }
+            })
+                .sort({ lastMessageTimestamp: -1 })
+                .populate('messages', 'content timestamp')
+                .limit(1);
+            const lastMessage = chat ? chat.lastMessage : null;
+            const lastMessagedTime = chat ? chat.lastMessageTimestamp : null;
+            uniqueSitters.set(sitterId, {
+                sitter: booking.sitter,
+                lastMessage,
+                lastMessagedTime
+            });
+        })));
+        const sittersWithLastMessage = Array.from(uniqueSitters.values());
+        res.status(200).json({ sitters: sittersWithLastMessage });
     }
     catch (error) {
         if (error instanceof Error) {
@@ -421,7 +635,29 @@ const getBookedparents = (0, express_async_handler_1.default)((req, res) => __aw
             path: 'parent',
             select: '-password',
         });
-        res.status(200).json({ parent: findParent });
+        const uniqueParents = new Map();
+        console.log(uniqueParents, 'pp');
+        yield Promise.all(findParent.map((booking) => __awaiter(void 0, void 0, void 0, function* () {
+            const parentId = booking.parent._id.toString();
+            if (uniqueParents.has(parentId)) {
+                return;
+            }
+            const chat = yield chatModel_1.default.findOne({
+                participants: { $all: [sitterId, parentId] }
+            })
+                .sort({ lastMessageTimestamp: -1 })
+                .populate('messages', 'content timestamp')
+                .limit(1);
+            const lastMessage = chat ? chat.lastMessage : null;
+            const lastMessagedTime = chat ? chat.lastMessageTimestamp : null;
+            uniqueParents.set(parentId, {
+                parent: booking.parent,
+                lastMessage,
+                lastMessagedTime
+            });
+        })));
+        const parentWithLastMessage = Array.from(uniqueParents.values());
+        res.status(200).json({ parent: parentWithLastMessage });
     }
     catch (error) {
         if (error instanceof Error) {

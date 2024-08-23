@@ -4,6 +4,7 @@ interface Admin extends Document {
   name: string;
   email: string;
   password: string;
+  role:string;
 }
 
 const adminSchema = new Schema<Admin>({
@@ -19,7 +20,11 @@ const adminSchema = new Schema<Admin>({
   password: {
     type: String,
     required: true
-  }
+  },
+  role: { 
+    type: String, 
+    default: 'admin' 
+},
 });
 
 const Admin = model<Admin>('Admin', adminSchema);

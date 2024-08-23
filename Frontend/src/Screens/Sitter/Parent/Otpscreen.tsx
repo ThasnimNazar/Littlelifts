@@ -8,6 +8,8 @@ import 'tailwindcss/tailwind.css';
 import axios from 'axios';
 import Header from '../../../Header';
 import Resendotp from '../../../Components/Parent/Resendotp';
+import api from '../../../Axiosconfig'
+
 
 const OtpComponent: React.FC = () => {
   const [otp, setOtp] = useState<string>('');
@@ -41,7 +43,7 @@ const OtpComponent: React.FC = () => {
         status: 'info',
         isClosable: true,
       })
-     await axios.post('/api/parent/resendotp')
+     await api.post('/resendotp')
      toast({
       title: 'resend otp successfully',
       status: 'success',
@@ -74,7 +76,7 @@ const OtpComponent: React.FC = () => {
 
   const submitHandler = async () => {
     try {
-      const response = await axios.post('/api/parent/verifyotp', {
+      const response = await api.post('/verifyotp', {
         otp,
         parentId: parentInfo?._id,
       });
@@ -90,7 +92,7 @@ const OtpComponent: React.FC = () => {
           isClosable: true,
           position: 'top-right',
         });
-        navigate('/');
+        navigate('/parent/subscription');
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -132,7 +134,7 @@ const OtpComponent: React.FC = () => {
               <input
                 {...props}
                 className="w-12 h-12 text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ fontSize: '1.5rem' }} // Optional: Adjust font size if needed
+                style={{ fontSize: '1.5rem' }} 
               />
             )}
             containerStyle="flex justify-center"

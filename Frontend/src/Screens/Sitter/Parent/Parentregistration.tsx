@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { RootState } from '../../../Store';
 import { setParentCredentials } from '../../../Slices/Parentslice';
 import { useParentregisterMutation } from '../../../Slices/Parentapislice';
 import Header from "../../../Header";
-import Loader from '../../../Loader';
+import unauthApi from '../../../Unauth';
+
 
 
 interface FormErrors {
@@ -31,11 +31,10 @@ const Parentregistration: React.FC = () => {
     const [confirmPassword, setconfirmPassword] = useState<string>('')
     const [phoneno, setPhoneno] = useState<string>('')
     const [selectedchildcategory, setSelectedChildcategory] = useState<string>('');
-    const [isRegistered, setIsRegistered] = useState<boolean>(false);
 
 
     const [childcategories,setChildcategory] = useState<ChildCategory[]>([])
-    const [register, { isLoading }] = useParentregisterMutation();
+    const [register] = useParentregisterMutation();
 
     const toast = useToast();
     const navigate = useNavigate();
@@ -93,8 +92,13 @@ const Parentregistration: React.FC = () => {
             try {
                 const res = await register({ name, email, phoneno, password, confirmPassword, selectedchildcategory }).unwrap();
                 console.log(res, 'xx')
+                const  response = { ...res }
+                const token = response.parentToken
+                console.log(token)
+                const role = response.role
+                localStorage.setItem('parentToken',token)
+                localStorage.setItem('role',role)
                 dispatch(setParentCredentials({ ...res }));
-                setIsRegistered(true);
                     toast({
                         title: 'Success',
                         description: 'Registration successfull',
@@ -147,7 +151,7 @@ const Parentregistration: React.FC = () => {
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await axios.get('/api/parent/get-childcategory');
+                const response = await unauthApi.get('/parent/get-childcategory');
                 console.log(response);
                 if (response.data && Array.isArray(response.data.category)) {
                     setChildcategory(response.data.category);
@@ -213,7 +217,7 @@ const Parentregistration: React.FC = () => {
                             </div>
                             <br></br>
                             <fieldset>
-                                <legend className="text-sm font-bold font-medium text-gray-900">Category of child you have</legend>
+                                <legend className="text-sm font-medium text-gray-900">Category of child you have</legend>
                                 <div className="mt-4 space-y-2">
                                     {childcategories.map((category, index) => (
                                         <label key={index} htmlFor={`Option${index}`} className="flex cursor-pointer items-start gap-4">
@@ -243,7 +247,6 @@ const Parentregistration: React.FC = () => {
                                 <a href="/parent/parentlogin" className="text-xs text-gray-500 uppercase">or sign in</a>
                                 <span className="border-b w-1/5 md:w-1/4"></span>
                             </div>
-                            {isLoading && <Loader />}
                         </form>
                     </div>
                 </div>

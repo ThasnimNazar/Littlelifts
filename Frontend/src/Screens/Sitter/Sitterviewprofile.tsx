@@ -2,14 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@chakra-ui/react';
-import axios from 'axios';
 import { RootState } from '../../Store';
-import Sitterlayout from '../../Components/Sitter/Sitterlayout';
 import { setSitterCredentials } from '../../Slices/Sitterslice';
+import Sitterheader from '../../Layouts/Adminlayouts/Sitter/Sitterheader'
+import api from '../../Axiosconfig';
 
 interface FormErrors {
   [key: string]: string;
 }
+
+interface Category{
+  _id:string;
+  name:string
+}[]
+
+
 
 const Profiledetailcard: React.FC = () => {
 
@@ -28,7 +35,7 @@ const Profiledetailcard: React.FC = () => {
   const [workwithpet, setWorkwithpet] = useState<'yes' | 'no'>('no');
   const [childcategory, setChildcategory] = useState<string[]>([]);
   const [servicePay, setServicepay] = useState<number>(0);
-  const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<Category[]>([]);
   const [profileImageUrl, setProfileimageurl] = useState<string>('')
 
   const dispatch = useDispatch();
@@ -40,10 +47,10 @@ const Profiledetailcard: React.FC = () => {
   useEffect(() => {
     const fetchCategoryNames = async () => {
       try {
-        const response = await axios.get('/api/sitter/get-childcategory');
+        const response = await api.get('/get-childcategory');
         const categoryData = response.data.category;
 
-        const mappedCategories = categoryData.map((category: any) => category.name);
+        const mappedCategories = categoryData.map((category: Category) => category.name);
         setCategoryNames(mappedCategories);
 
         setCategoryData(categoryData);
@@ -51,7 +58,7 @@ const Profiledetailcard: React.FC = () => {
         if (sitterInfo) {
           const sitterCategoryIds = sitterInfo.childcategory;
           const sitterCategoryNames = sitterCategoryIds.map((categoryId: string) =>
-            categoryData.find((category: any) => category._id === categoryId)?.name || ''
+            categoryData.find((category: Category) => category._id === categoryId)?.name || ''
           );
           setChildcategory(sitterCategoryNames);
         }
@@ -156,7 +163,7 @@ const Profiledetailcard: React.FC = () => {
     }
 
     const selectedCategoryIds = childcategory.map((categoryName) =>
-      categoryData.find((category: any) => category.name === categoryName)?._id || ''
+      categoryData.find((category: Category) => category.name === categoryName)?._id || ''
     );
 
     const formData = new FormData();
@@ -174,7 +181,7 @@ const Profiledetailcard: React.FC = () => {
     }
 
     try {
-      const response = await axios.put(`/api/sitter/editprofile/${sitterId}`, formData, {
+      const response = await api.put(`/editprofile/${sitterId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -198,7 +205,8 @@ const Profiledetailcard: React.FC = () => {
 
 
   return (
-    <Sitterlayout>
+    <>
+    <Sitterheader/>
       <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <h2 className="text-lg font-bold mb-4">Edit Profile</h2>
         <form onSubmit={handleSubmit}>
@@ -353,7 +361,7 @@ const Profiledetailcard: React.FC = () => {
           </div>
         </form>
       </div>
-    </Sitterlayout>
+      </>
   );
 };
 

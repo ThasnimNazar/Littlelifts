@@ -28,4 +28,9 @@ adminroute.put('/block-sitter/:sitterId', adminMiddleware_1.default, adminContro
 adminroute.put('/unblock-sitter/:sitterId', adminMiddleware_1.default, adminController_1.unblockSitter);
 adminroute.put('/block-parent/:parentId', adminMiddleware_1.default, adminController_1.blockParent);
 adminroute.put('/unblock-parent/:parentId', adminMiddleware_1.default, adminController_1.unblockParent);
+adminroute.post('/add-subscription', adminMiddleware_1.default, adminController_1.addSubscription);
+adminroute.get('/get-subscriptions', adminMiddleware_1.default, adminController_1.getSubscriptions);
+adminroute.put('/edit-subscription/:id', adminMiddleware_1.default, adminController_1.editSubscription);
+adminroute.get('/get-editsubscriptions/:id', adminMiddleware_1.default, adminController_1.getEditsubscription);
+adminroute.get('/get-bookings', adminMiddleware_1.default, adminController_1.getBookingHistory);
 exports.default = adminroute;

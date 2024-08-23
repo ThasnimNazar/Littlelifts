@@ -1,7 +1,8 @@
 import express from 'express'
 
 import { registerAdmin, adminLogin, adminLogout,getSitters,verifySitter,
-blockSitter,unblockSitter,getParent,blockParent,unblockParent } from '../Controllers/adminController'
+blockSitter,unblockSitter,getParent,blockParent,unblockParent,addSubscription,
+getSubscriptions,editSubscription,getEditsubscription, getBookingHistory } from '../Controllers/adminController'
 
 import {
     addChildcategory, editChildcategory, deleteChildcategory,getAllchildCategory,
@@ -41,6 +42,13 @@ adminroute.put('/unblock-sitter/:sitterId',authenticateAdmin,unblockSitter)
 
 adminroute.put('/block-parent/:parentId',authenticateAdmin,blockParent)
 adminroute.put('/unblock-parent/:parentId',authenticateAdmin,unblockParent)
+
+adminroute.post('/add-subscription',authenticateAdmin,addSubscription)
+adminroute.get('/get-subscriptions',authenticateAdmin,getSubscriptions)
+adminroute.put('/edit-subscription/:id',authenticateAdmin,editSubscription)
+adminroute.get('/get-editsubscriptions/:id',authenticateAdmin,getEditsubscription)
+
+adminroute.get('/get-bookings',authenticateAdmin,getBookingHistory)
 
 
 

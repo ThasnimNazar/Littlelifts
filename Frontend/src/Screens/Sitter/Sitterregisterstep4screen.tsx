@@ -1,15 +1,19 @@
 import React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import RegularSitting from '../../Components/Sitter/Regularsitting';
 import Occasionalsitting from '../../Components/Sitter/Occasionalsitting';
 import Weekendsitting from '../../Components/Sitter/Weekendsitting';
 import Specialcaresitting from '../../Components/Sitter/Specialcaresitting';
 
 
+
 const Sitterregisterstep4screen: React.FC = () => {
-    const { selectedOptionid } = useParams<{ selectedOptionid: string }>();
+    const { selectedOptionid } = useParams<{ selectedOptionid?: string }>();
     const location = useLocation();
     const { selectedname } = location.state as { selectedname: string };
+
+    if (typeof selectedOptionid !== 'string') {
+        return <p>Invalid selectedOptionid</p>;
+    }
 
     console.log('Selected Sitting Option Name:', selectedname);
     console.log('Selected Sitting Option Id:', selectedOptionid);

@@ -5,12 +5,26 @@ import { useSelector } from 'react-redux';
 import { useToast } from '@chakra-ui/react';
 import { RootState } from '../../Store';
 import axios from 'axios';
+// import api from '../../Axiosconfig'
 
 
-interface Parent{
-  _id:string;
-  name:string;
-  profileImage:string;
+
+interface Parent {
+  _id: string;
+  name: string;
+  profileImage: string;
+  lastMessage: string;
+  lastMessagedTime: string;
+}
+
+interface ParentResponse {
+  parent: {
+    _id: string;
+    name: string;
+    profileImage: string;
+  };
+  lastMessage: string;
+  lastMessagedTime: string;
 }
 
 interface ChatsidebarProps {
@@ -26,16 +40,21 @@ const Sitterchatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
   const sitterId = sitterInfo?._id;
   const toast = useToast();
 
+
+
   useEffect(() => {
     const getbabySitter = async () => {
       try {
-        const response = await axios.get(`/api/sitter/booked-parents/${sitterId}`)
-        const results = response.data.parent
-        const parent = results.map((parent:any)=>parent.parent)
-        console.log(parent,'bbb')
-        const bookedParents = parent.map((booked:any)=>booked)
-        console.log(bookedParents.name,'ll')
-        setBookedparents(bookedParents)
+        const response = await axios.get(`/api/sitter/booked-parents/${sitterId}`) 
+        const bookedParentsData: ParentResponse[] = response.data.parent;       
+        const bookedParents: Parent[] = bookedParentsData.map((parentObj: ParentResponse) => ({
+          _id: parentObj.parent._id,
+          name: parentObj.parent.name,
+          profileImage: parentObj.parent.profileImage,
+          lastMessage: parentObj.lastMessage || 'No messages yet',
+          lastMessagedTime: parentObj.lastMessagedTime || '',
+        }));
+        setBookedparents(bookedParents);
       }
       catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -60,7 +79,14 @@ const Sitterchatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
       }
     }
     getbabySitter()
-  }, [])
+  }, [sitterId])
+
+  const formatDateTime = (dateTime: string | null) => {
+    if (!dateTime) return '';
+    const date = new Date(dateTime);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
   return (
     <>
       <aside id="nav-menu-1" aria-label="Side navigation" className="fixed top-0 bottom-0 left-0 z-40 flex flex-col transition-transform -translate-x-full bg-white border-r sm:translate-x-0 border-r-slate-200 w-80">
@@ -102,8 +128,17 @@ const Sitterchatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
                 >
                   <img src={parent.profileImage} alt={parent.name} className="w-12 h-12 rounded-full object-cover" />
                   <div className="flex flex-col items-start justify-center flex-1 w-full h-24 gap-0 overflow-hidden text-sm truncate">
-                    {parent.name}
-                  </div>
+                      <span className="font-semibold">{parent.name}</span>
+                      <span className="text-gray-500 truncate">
+                        {parent.lastMessage || 'No messages yet'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {parent.lastMessagedTime
+                          ? formatDateTime(parent.lastMessagedTime)
+                          : ''}
+                      </span>
+
+                    </div>
                 </button>
               </li>
             ))}

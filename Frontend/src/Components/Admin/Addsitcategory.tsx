@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AxiosError } from 'axios';
+import api from '../../Axiosconfig';
 import { useToast } from '@chakra-ui/react'
 
 interface FormErrors {
@@ -66,7 +67,7 @@ const Addsitcategory: React.FC = () => {
         }
         else {
             try {
-                const response = await axios.post<CategoryResponse>('/api/admin/add-sittingcategory', {
+                const response = await api.post<CategoryResponse>('/add-sittingcategory', {
                     name, description
                 })
                 console.log(response, 'res')

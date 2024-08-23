@@ -19,8 +19,8 @@ import Parentprivateroutes from './Components/Parent/Parrentprivateroutes.tsx';
 import Bookingscreen from './Screens/Sitter/Parent/Bookingscreen.tsx';
 import Success from './Screens/Sitter/Parent/Success.tsx'
 import Parentbookings from './Screens/Sitter/Parent/Parentbookings.tsx';
-import Wallet from './Screens/Sitter/Parent/Wallet.tsx';
 import Chatscreen from './Screens/Sitter/Parent/Chatscreen.tsx';
+import Subscription from './Subscription.tsx';
 
 
 import Sitterregisterstep1screen from './Screens/Sitter/Sitterregiterstep1screen.tsx';
@@ -33,15 +33,13 @@ import Sitterviewprofile from './Screens/Sitter/Sitterviewprofile.tsx';
 import Sitterotpscreen from './Screens/Sitter/Sitterotpscreen.tsx';
 import Sitterloginscreen from './Screens/Sitter/Sitterloginscreen.tsx';
 import Sitterslotscreen from './Screens/Sitter/Sitterslotscreen.tsx';
-import Editslotscreen from './Screens/Sitter/Editslotscreen.tsx';
 import Sitterforgetpassword from './Screens/Sitter/Sitterforgetpassword.tsx';
 import Sitterforgetotp from './Screens/Sitter/Sitterforgetotp.tsx';
-import Editslots from './Screens/Sitter/Editslots.tsx';
-import Sitterprivateroutes from './Components/Sitter/Sitterprivateroutes.tsx';
+// import Sitterprivateroutes from './Components/Sitter/Sitterprivateroutes.tsx';
 import Sitterresetpassword from './Screens/Sitter/Sitterresetpassword.tsx';
 import SitterRegistrationStep from './Screens/Sitter/Sitterregisterationstep.tsx';
-import Bookings from './Screens/Sitter/Bookings.tsx';
 import Sitterchat from './Screens/Sitter/Sitterchat.tsx';
+import Favourites from './Screens/Sitter/Parent/Favourites.tsx';
 
 
 
@@ -53,10 +51,14 @@ import ManageParent from './Components/Admin/Manageparent.tsx';
 import Managesittingcategory from './Components/Admin/Managesittingcategory.tsx';
 import Addsitcategory from './Components/Admin/Addsitcategory.tsx';
 import Managechildcategory from './Components/Admin/Managechildcategory.tsx';
+import Managesubscription from './Components/Admin/Managesubscription.tsx';
 import Addchildcategory from './Components/Admin/Addchildcategory.tsx';
 import Editsittingcategory from './Components/Admin/Editsittingcategory.tsx';
 import Managesitter from './Components/Admin/Managesitter.tsx';
 import AdminprivateRoutes from './Components/Admin/Adminprivateroutes.tsx';
+import Addsubscription from './Components/Admin/Addsubscription.tsx';
+import Editsubscription from './Components/Admin/Editsubscription.tsx';
+import Dashboard from './Components/Admin/Dashboard.tsx';
 
 import { SocketProvider } from './Components/Socket/Socketcontext.tsx';
 
@@ -89,14 +91,9 @@ root.render(
 
 
 
-        <Route path = '' element = {<Sitterprivateroutes/>}>
         <Route path = '/sitter/viewprofile' element = {<Sitterviewprofile/>} />
         <Route path = '/sitter/slot' element = {<Sitterslotscreen/>} />
-        <Route path = '/sitter/editslot/:slotId' element = {<Editslotscreen/>} />
-        <Route path = '/sitter/edit-slots' element = {<Editslots/>} />
-        <Route path = '/sitter/bookings' element = {<Bookings/>} />
         <Route path = '/sitter/chat' element = {<Sitterchat/>} />
-        </Route>
 
         
 
@@ -107,16 +104,18 @@ root.render(
         <Route path = '/parent/forget-otp' element = {<Forgetotpscreen/>}/>
         <Route path = '/parent/resetpassword' element = {<Resetpasswordscreen/>} />
         <Route path = '/parent/babysitters' element = {<Babysitters/>} />
+
         
 
 
         <Route path = '' element = {<Parentprivateroutes/>}>
+        <Route path = '/parent/subscription' element = {<Subscription/>} />
         <Route path = '/parent/viewprofile' element = {<Viewparentprofile/>} />
         <Route path = '/parent/confirmbooking' element = {<Bookingscreen/>} />
         <Route path = '/parent/checkout-success' element = {<Success/>} />
         <Route path = '/parent/chat' element = {<Chatscreen/>} />
         <Route path = '/parent/booking' element = {<Parentbookings/>} />
-        <Route path = '/parent/wallet' element = {<Wallet/>} />
+        <Route path = '/parent/favourites' element = {<Favourites/>} />
         </Route>
 
 
@@ -128,6 +127,7 @@ root.render(
         
       <Route element={<AdminprivateRoutes />}>
         <Route path = '/admin/adminhome/*' element = { <Adminscreen/> } >
+          <Route index element={<Dashboard />} />
           <Route path="manage-parent" element={<ManageParent />} />
           <Route path="manage-sittingcategories" element={<Managesittingcategory/>} />
           <Route path="add-category" element = {<Addsitcategory/>} />
@@ -135,6 +135,9 @@ root.render(
           <Route path="manage-childcategories" element = {<Managechildcategory/>} />
           <Route path="add-childcategory" element = {<Addchildcategory/>} />
           <Route path = "manage-sitters" element ={<Managesitter/>} />
+          <Route path = "manage-subscription" element={<Managesubscription/>} />
+          <Route path = 'add-subscription' element = {<Addsubscription/>} />
+          <Route path = 'edit-subscription/:id' element = {<Editsubscription/>} />
         </Route>
       </Route>
       </Routes>

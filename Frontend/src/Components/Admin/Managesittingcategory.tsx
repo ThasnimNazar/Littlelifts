@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios';
+import api from '../../Axiosconfig';
 
 interface CategoryData {
     _id: string;
@@ -25,7 +25,7 @@ const Managesittingcategory: React.FC = () => {
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await axios.get<ResponseData>('/api/admin/get-sittingcategory');
+                const response = await api.get<ResponseData>('/get-sittingcategory');
                 console.log(response.data); 
                 if (response.data) {
                     setCategories(response.data.category);
@@ -62,7 +62,7 @@ const Managesittingcategory: React.FC = () => {
                     <button
                         onClick={async () => {
                             try {
-                                await axios.delete(`/api/admin/delete-sittingcategory/${categoryId}`);
+                                await api.delete(`/delete-sittingcategory/${categoryId}`);
                                 setCategories(prevCategories => prevCategories.filter(category => category._id !== categoryId));
                                 toast({
                                     title: 'Delete Successful',

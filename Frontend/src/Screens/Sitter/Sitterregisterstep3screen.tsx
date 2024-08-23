@@ -1,9 +1,9 @@
 import Header from "../../Header";
 import { useEffect, useState } from "react";
-import { useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Alert, AlertIcon, AlertTitle, AlertDescription } from "@chakra-ui/react";
+import { useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { setSitterCredentials } from "../../Slices/Sitterslice";
+import api from '../../Axiosconfig';
+
 
 interface Sittingcategory {
     _id: string;
@@ -11,9 +11,7 @@ interface Sittingcategory {
     description: string;
 }
 
-interface ResponseData {
-    category: Sittingcategory[];
-}
+
 
 const Sitterregisterstep3screen: React.FC = () => {
     const toast = useToast();
@@ -25,11 +23,12 @@ const Sitterregisterstep3screen: React.FC = () => {
     const [selectedname,setSelectedname] = useState<string>('')
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [sitterId,setSitterId] = useState<string>('')
+    console.log(sitterId,selectedname,selectedId)
 
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await axios.get('/api/sitter/get-sittingcategory');
+                const response = await api.get('/get-sittingcategory');
                 console.log(response);
                 if (response.data && Array.isArray(response.data.category)) {
                     setSittingcategory(response.data.category);
@@ -71,7 +70,7 @@ const Sitterregisterstep3screen: React.FC = () => {
                 setSitterId(sitterInfo._id);
 
                 try {
-                    const response = await axios.put(`/api/sitter/save-sittingoption/${sitterInfo._id}`, {
+                    const response = await api.put(`/save-sittingoption/${sitterInfo._id}`, {
                         selectedOption: selectedCategory.name,
                         selectedOptionId: selectedCategory._id
                     });

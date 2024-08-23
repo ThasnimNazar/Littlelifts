@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Parentlayout from '../../../Components/Parent/Parentlayout';
 import { RootState } from '../../../Store'
+import api from '../../../Axiosconfig'
+
 
 interface Booking {
   _id: string;
@@ -67,7 +69,7 @@ const Parentbookings = () => {
   useEffect(() => {
     const fetchParentBookings = async () => {
       try {
-        const response = await axios.get(`/api/parent/bookings/${parentId}`, {
+        const response = await api.get(`/bookings/${parentId}`, {
           params: {
             page: currentPage,
             limit: itemsPerPage,
@@ -86,7 +88,7 @@ const Parentbookings = () => {
     }
   }, [parentId, currentPage, toast]);
 
-  const handleAxiosError = (error) => {
+  const handleAxiosError = (error:unknown) => {
     if (axios.isAxiosError(error) && error.response) {
       toast({
         title: 'Error',
@@ -110,28 +112,18 @@ const Parentbookings = () => {
 
   console.log(rating, review, 'raaa')
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage:number) => {
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
     }
   };
 
-  const getRatingDescription = (star: number) => {
-    switch (star) {
-      case 1: return 'Very Poor';
-      case 2: return 'Poor';
-      case 3: return 'Average';
-      case 4: return 'Good';
-      case 5: return 'Excellent';
-      default: return '';
-    }
-  };
 
 
   const handleReviewSubmit = async () => {
     try {
       if (selectedBooking) {
-        const response = await axios.post('/api/parent/post-review', {
+        const response = await api.post('/post-review', {
           rating: rating,
           review: review,
           bookingId: selectedBooking._id
@@ -236,7 +228,7 @@ const Parentbookings = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredBookings.map((booking, index) => (
+              {filteredBookings.map((booking) => (
                 <tr key={booking._id}>
                   <td>
                     <div className="avatar">

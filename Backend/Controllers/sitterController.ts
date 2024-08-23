@@ -20,6 +20,8 @@ import OccasionalSitting from "../Models/occasionalsittingModel";
 import SpecialCareSitting from "../Models/specialcareModel";
 import Chat from '../Models/chatModel'
 import Message from "../Models/messageModel";
+import Review from '../Models/reviewModel'
+import Parent from '../Models/parentModel'
 
 const uploadMultiplePromise = promisify(uploadMultiple);
 const uploadSingleImagePromise = promisify(uploadSingle);
@@ -52,6 +54,10 @@ interface OtpBody {
 interface PasswordBody {
     password: string;
     confirmPassword: string;
+}
+
+interface UpdateData{
+    chatId:string;
 }
 
 
@@ -184,6 +190,7 @@ const sitterregisterStep1 = asyncHandler(async (req: Request<{}, {}, sitterregis
             password: hashedPassword,
             phoneno: phoneno,
             gender: gender,
+            role:'sitter',
             location: {
                 type: 'Point',
                 coordinates: [longitude, latitude] 
@@ -193,10 +200,10 @@ const sitterregisterStep1 = asyncHandler(async (req: Request<{}, {}, sitterregis
 
         await sitter.save();
         await sendOTPVerificationEmail({ id: sitter._id as Types.ObjectId, email: sitter.email }, res);
-        generateSitterToken(res, sitter._id as Types.ObjectId)
+        const token = generateSitterToken(res, sitter._id as Types.ObjectId)
 
         if (sitter) {
-            res.status(200).json({ message: 'Registration successful', sitter: sitter });
+            res.status(200).json({ message: 'Registration successful', sitter: sitter,sitterToken:token });
         }
     } catch (error) {
         res.status(500).json({
@@ -746,6 +753,11 @@ const sitterLogin = asyncHandler(async (req: Request, res: Response) => {
             return;
         }
 
+        if(!sitter?.role){
+            sitter.role = 'sitter'
+            await sitter.save();
+        }
+
         if(sitter.blocked){
             res.status(403).json({message:'your account is blocked'})
         }
@@ -758,8 +770,8 @@ const sitterLogin = asyncHandler(async (req: Request, res: Response) => {
                 return;
             }
 
-            generateSitterToken(res, sitter._id as Types.ObjectId);
-            res.status(200).json({ sitter: sitter, message: 'Sitter logged in successfully' });
+            const token = generateSitterToken(res, sitter._id as Types.ObjectId);
+            res.status(200).json({ sitter: sitter,sitterToken:token, message: 'Sitter logged in successfully' });
         }
         else {
             res.status(400).json({ message: "your profile is not verified,please verify to login" })
@@ -1289,9 +1301,16 @@ const sendMessage = asyncHandler(async (req: Request, res: Response) => {
             AudioUrl: audioUrl || ''
         });
 
+        await message.save();
+        console.log(message, 'msg')
+
         await Chat.findByIdAndUpdate(
             chatId,
-            { $push: { messages: message._id } },
+            {
+                $push: { messages: message._id },
+                lastMessage: content,
+                lastMessageTimestamp: new Date(timestamp)
+            },
             { new: true }
         );
         res.status(200).json({ message })
@@ -1324,6 +1343,28 @@ const getMessages = asyncHandler(async (req: Request<{ chatId: string }>, res: R
         }
     }
 })
+
+const lastMsg = async(req:Request<{ chatId:string}>,res:Response)=>{
+    try{
+        const { chatId } = req.params;
+        const chat = await Chat.findById(chatId).populate('lastMessage')
+            .exec();
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found' });
+        }
+
+        res.status(200).json({ chat })
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}
 
 const checkBlocked = asyncHandler(async(req:Request,res:Response)=>{
     try{
@@ -1358,12 +1399,131 @@ const checkBlocked = asyncHandler(async(req:Request,res:Response)=>{
     }
 })
 
+const getReview = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+        const { sitterId }= req.params
+        if(!sitterId){
+            res.status(404).json({message:'sitterId is required'})
+        }
+        const review = await Review.find({sitter:sitterId}).populate('parent')
+        res.status(200).json({review})
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    } 
+})
+    
+const lastSeen = async(req:Request<{sitterId:string}>,res:Response)=>{
+    try{
+
+        const { sitterId } = req.params;
+
+        const updateSitter = await Sitter.findByIdAndUpdate(
+            sitterId,
+            {
+                lastseen:new Date()
+            },
+            {
+                new:true
+            }
+        )
+
+        if (!updateSitter) {
+            return res.status(404).json({ message: 'Parent not found' });
+        }
+
+        res.status(200).json({lastseen:updateSitter.lastseen})
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    } 
+}
+
+const getLastseen = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+        const { parentId } = req.query;
+        const parent = await Parent.findById(parentId)
+        if(!parent){
+            res.status(404).json({message:'parent not found'})
+            return
+        }
+
+        const lastseen = parent?.lastseen
+        res.status(200).json({lastseen})
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });  
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const postSeen = async(req:Request<{sitterId:string}>,res:Response)=>{
+    try{
+        const { sitterId } = req.params;
+        console.log(sitterId,'id')
+        const { chatId }= req.query;
+        console.log(req.query.chatId,'idss')
+
+        if (!sitterId || !chatId) {
+            return res.status(400).json({ message: 'sitterId and chatId are required' });
+        }
+
+        const unseenMessages = await Message.find({
+            chat: chatId,
+            seenBy: { $ne: sitterId }  
+        })
+
+        if (unseenMessages.length === 0) {
+            return res.status(200).json({ message: 'No unseen messages' });
+          }
+      
+          for (const message of unseenMessages) {
+            message.seenBy.push(sitterId);
+            await message.save();  
+          }
+      
+          res.status(200).json({ message: 'Messages marked as seen' });
+
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}
+
+
 
 export {
     sitterregisterStep1, sitterregisterStep2, sitterregisterStep3, getsittingOptions,
     sitterLogout, saveSittingOption, manageSlots, uploadVerificationDocuments, getStatus, getsitterProfile,
     sitterverifyOtp, sitresendOtp, sitterforgotPassword, sitterpasswordOtp, resetsitterPassword, sitterLogin,
     editProfile, getSlots, getSittingcategory, geteditSlot, editSlot, getBabysitter, editTimeslot,
-    bookingsList, createChat, sendMessage, getMessages, checkBlocked
+    bookingsList, createChat, sendMessage, getMessages, checkBlocked, getReview, lastSeen, getLastseen,lastMsg,
+    postSeen
 
 }

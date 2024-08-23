@@ -1,20 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { useToast, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
-import axios from 'axios';
+import api from '../../Axiosconfig';
+
+
+interface Parent{
+  _id:string;
+  name:string;
+  email:string;
+  phoneno:number;
+  blocked:boolean
+}
+
+interface ParentBlock{
+  _id:string;
+  name:string;
+  blocked:boolean;
+}
 
 const ManageParent: React.FC = () => {
-  const [parents, setParent] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedParent, setSelectedParent] = useState<any | null>(null);
+  const [parents, setParent] = useState<Parent[]>([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [parentToBlock, setParentToBlock] = useState<any | null>(null);
+  const [parentToBlock, setParentToBlock] = useState<ParentBlock | null>(null);
 
   const toast = useToast();
 
   useEffect(() => {
     const fetchSitters = async () => {
       try {
-        const response = await axios.get('/api/admin/get-parent');
+        const response = await api.get('/get-parent');
         console.log(response.data, 'res');
         if (response.data && response.data[0]) {
             setParent(response.data[0]);
@@ -31,7 +44,7 @@ const ManageParent: React.FC = () => {
       }
     };
     fetchSitters();
-  }, []);
+  }, [toast]);
 
 
  
@@ -41,13 +54,11 @@ const ManageParent: React.FC = () => {
     setParentToBlock(null);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
+ 
  
 
-  const toggleBlockStatus = (sitter: any) => {
-    setParentToBlock(sitter);
+  const toggleBlockStatus = (parent: Parent) => {
+    setParentToBlock(parent);
     setIsConfirmModalOpen(true);
   };
 
@@ -56,8 +67,8 @@ const ManageParent: React.FC = () => {
     
     try {
       const updatedStatus = !parentToBlock.blocked;
-      const endpoint = updatedStatus ? `/api/admin/block-parent/${parentToBlock._id}` : `/api/admin/unblock-parent/${parentToBlock._id}`;
-      await axios.put(endpoint);
+      const endpoint = updatedStatus ? `/block-parent/${parentToBlock._id}` : `/unblock-parent/${parentToBlock._id}`;
+      await api.put(endpoint);
 
       setParent((prevParent) =>
         prevParent.map((s) =>
@@ -74,7 +85,8 @@ const ManageParent: React.FC = () => {
         position: 'top-right',
       });
 
-      closeModal();   
+      setIsConfirmModalOpen(false);
+      setParentToBlock(null); 
     } catch (error) {
       toast({
         title: 'Error',

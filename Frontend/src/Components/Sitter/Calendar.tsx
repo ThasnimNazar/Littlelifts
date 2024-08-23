@@ -4,8 +4,16 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
+type DateSelectInfo = {
+    start: Date; 
+    startStr: string; 
+    end: Date; 
+    endStr: string; 
+    allDay: boolean; 
+  };
+
 interface FullCalendarProps {
-    handleDateSelect: (info: any) => void;
+    handleDateSelect: (info: DateSelectInfo) => void;
 }
 
 const Calendar : React.FC<FullCalendarProps> = ({ handleDateSelect }) =>{

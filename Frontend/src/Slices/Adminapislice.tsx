@@ -1,5 +1,4 @@
 import { apiSlice } from "./Apislice";
-import { ObjectId } from "mongoose";
 
 export interface AdminRegisterData {
     name: string;
@@ -9,14 +8,17 @@ export interface AdminRegisterData {
   } //the shape of the data we are going to send
 
 export interface Admin {
-    _id: ObjectId;
+    _id: string;
     name: string;
     email: string;
+    role:string;
   }
 
 export interface AdminRegisterResponse {
     message: string;
     admin: Admin;
+    token:string;
+    role:string;
   }
 //the response data we are dispatching to the store
 

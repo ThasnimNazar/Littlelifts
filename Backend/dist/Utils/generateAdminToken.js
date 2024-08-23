@@ -14,5 +14,6 @@ const generateAdmintoken = (res, userId) => {
         maxAge: 30 * 24 * 60 * 60 * 1000, // Sets expiry of cookie to 30 days
     };
     res.cookie('adminJwt', jwtToken, cookieOptions);
+    return jwtToken;
 };
 exports.default = generateAdmintoken;

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import { useToast } from "@chakra-ui/react";
+import api from '../../Axiosconfig';
+
 
 interface FormErrors {
     [key: string]: string;
@@ -11,7 +13,7 @@ interface EditCategory {
     _id: string;
     name: string;
     description: string;
-    imageUrl: string; // Add imageUrl to the category interface
+    imageUrl: string; 
 }
 
 interface CategoryResponse {
@@ -26,7 +28,7 @@ interface GetResponse {
 const Editsittingcategory: React.FC = () => {
     const [name, setName] = useState<string>('');
     const [description, setDescription] = useState<string>('');
-    const [image, setImage] = useState<File | null>(null); // State for image
+    const [image, setImage] = useState<File | null>(null); 
     const { categoryId } = useParams<{ categoryId: string }>();
     console.log(categoryId, 'id');
     const toast = useToast();
@@ -105,8 +107,8 @@ const Editsittingcategory: React.FC = () => {
                     formData.append("image", image);
                 }
 
-                const response = await axios.put<CategoryResponse>(
-                    `/api/admin/edit-sittingcategory/${categoryId}`,
+                const response = await api.put<CategoryResponse>(
+                    `/edit-sittingcategory/${categoryId}`,
                     formData,
                     {
                         headers: {

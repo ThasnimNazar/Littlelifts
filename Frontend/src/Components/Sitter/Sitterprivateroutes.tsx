@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useToast } from '@chakra-ui/react'
 import { useDispatch } from 'react-redux'
 import axios from 'axios'
@@ -55,7 +55,7 @@ const Sitterprivateroutes = () => {
          }
       }
       fetchBlock()
-   },[sitterId,toast,navigate])
+   },[sitterInfo,toast])
 
    console.log(sitterInfo,'siiiii')
 

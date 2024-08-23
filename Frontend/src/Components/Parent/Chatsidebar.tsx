@@ -1,26 +1,40 @@
 
-import React, { useEffect,useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../../Css/Admin/Chat.css'
 import { useSelector } from 'react-redux';
 import { useToast } from '@chakra-ui/react';
 import { RootState } from '../../Store';
 import axios from 'axios';
+import api from '../../Axiosconfig'
 
 
-interface BabySitter{
-  _id:string;
-  name:string;
-  profileImage:string;
+
+interface BabySitter {
+  _id: string;
+  name: string;
+  profileImage: string;
+  lastMessage: string;
+  lastMessagedTime: string;
 }
 
 interface ChatsidebarProps {
   onSelectChat: (sitter: BabySitter) => void;
 }
 
+interface Sitter{
+  sitter:{
+    _id: string;
+  name: string;
+  profileImage: string;
+  }
+  lastMessage: string;
+  lastMessagedTime: string;
+}
+
 
 const Chatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
-  
-  const [ bookedsitters,setBookedsitters ] = useState<BabySitter[]>([])
+
+  const [bookedsitters, setBookedsitters] = useState<BabySitter[]>([])
 
   const { parentInfo } = useSelector((state: RootState) => state.parentAuth)
   const parentId = parentInfo?._id;
@@ -29,13 +43,19 @@ const Chatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
   useEffect(() => {
     const getbabySitter = async () => {
       try {
-        const response = await axios.get(`/api/parent/booked-sitters/${parentId}`)
-        const results = response.data.sitter
-        const sitter = results.map((sitter:any)=>sitter.sitter)
-        console.log(sitter,'bbb')
-        const bookedSitters = sitter.map((booked:any)=>booked)
-        console.log(bookedSitters.name,'ll')
-        setBookedsitters(bookedSitters)
+        const response = await api.get(`/booked-sitters/${parentId}`)
+        console.log(response, 'siii')
+        const sittersData = response.data.sitters.map((sitterObj: Sitter) => {
+          const sitter = sitterObj.sitter;
+          return {
+            _id: sitter._id,
+            name: sitter.name,
+            profileImage: sitter.profileImage,
+            lastMessage: sitterObj.lastMessage || 'No messages yet',
+            lastMessagedTime: sitterObj.lastMessagedTime || null,
+          };
+        });
+        setBookedsitters(sittersData);
       }
       catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -60,7 +80,14 @@ const Chatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
       }
     }
     getbabySitter()
-  }, [])
+  }, [parentId,toast])
+
+  const formatDateTime = (dateTime: string | null) => {
+    if (!dateTime) return '';
+    const date = new Date(dateTime);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
   return (
     <>
       <aside id="nav-menu-1" aria-label="Side navigation" className="fixed top-0 bottom-0 left-0 z-40 flex flex-col transition-transform -translate-x-full bg-white border-r sm:translate-x-0 border-r-slate-200 w-80">
@@ -93,21 +120,30 @@ const Chatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
         </div>
         <nav aria-label="side navigation" className="flex-1 overflow-hidden divide-y divide-slate-100">
           <div>
-          <ul className="flex flex-col flex-1 gap-1 py-3">
-            {bookedsitters.map(sitter => (
-              <li key={sitter._id} className="px-3">
-                <button
-                  onClick={() => onSelectChat(sitter)} 
-                  className="flex items-center gap-3 p-3 transition-colors rounded text-slate-700 hover:text-sky-500 hover:bg-sky-50 focus:bg-sky-50 aria-[current=page]:text-sky-500 aria-[current=page]:bg-emerald-50 w-full text-left"
-                >
-                  <img src={sitter.profileImage} alt={sitter.name} className="w-12 h-12 rounded-full object-cover" />
-                  <div className="flex flex-col items-start justify-center flex-1 w-full h-24 gap-0 overflow-hidden text-sm truncate">
-                    {sitter.name}
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
+            <ul className="flex flex-col flex-1 gap-1 py-3">
+              {bookedsitters.map(sitter => (
+                <li key={sitter._id} className="px-3">
+                  <button
+                    onClick={() => onSelectChat(sitter)}
+                    className="flex items-center gap-3 p-3 transition-colors rounded text-slate-700 hover:text-sky-500 hover:bg-sky-50 focus:bg-sky-50 aria-[current=page]:text-sky-500 aria-[current=page]:bg-emerald-50 w-full text-left"
+                  >
+                    <img src={sitter.profileImage} alt={sitter.name} className="w-12 h-12 rounded-full object-cover" />
+                    <div className="flex flex-col items-start justify-center flex-1 w-full h-24 gap-0 overflow-hidden text-sm truncate">
+                      <span className="font-semibold">{sitter.name}</span>
+                      <span className="text-gray-500 truncate">
+                        {sitter.lastMessage || 'No messages yet'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {sitter.lastMessagedTime
+                          ? formatDateTime(sitter.lastMessagedTime)
+                          : ''}
+                      </span>
+
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </nav>
       </aside>

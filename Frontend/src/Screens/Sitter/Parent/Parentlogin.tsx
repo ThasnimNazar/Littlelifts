@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSelector, useDispatch } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { useToast } from '@chakra-ui/react'
 import axios from 'axios'
 import Header from '../../../Header'
-import Loader from '../../../Loader'
-import { RootState } from '../../../Store'
 import { setParentCredentials } from '../../../Slices/Parentslice'
+import unauthApi from '../../../Unauth';
 
 
 
@@ -23,7 +22,6 @@ const Parentlogin: React.FC = () => {
     const toast = useToast()
     const dispatch = useDispatch();
 
-    const { parentInfo } = useSelector((state: RootState) => state.parentAuth)
 
     const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -39,10 +37,15 @@ const Parentlogin: React.FC = () => {
         }
         else {
             try {
-                const res = await axios.post('/api/parent/login-parent', {
+                const res = await unauthApi.post('/parent/login-parent', {
                     email, password
                 })
+                console.log(res)
+                const { parentToken } = res.data
+                const { role } = res.data
                 if (res.status === 200) {
+                    localStorage.setItem('parentToken',parentToken)
+                    localStorage.setItem('role',role)
                     dispatch(setParentCredentials({ ...res.data.parent }));
                     toast({
                         title: 'Success',

@@ -23,6 +23,8 @@ const generateSitterToken = (res:Response,sitterId:Types.ObjectId)=>{
         sameSite : 'strict',//to prevent csrf attack
         maxAge : 30 * 24 * 60 * 60 * 1000
     })
+
+    return token;
 }
 
 export default generateSitterToken;

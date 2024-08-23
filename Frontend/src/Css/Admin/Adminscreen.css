@@ -15,6 +15,18 @@
   .admin-screen-container .admin-content {
     flex: 1; 
     background-color: #ffffff; 
-    overflow-y: auto; 
+    overflow: auto;  
   }
-  
+
+  .admin-screen-container::-webkit-scrollbar{
+    width: 0px;
+    background: transparent; 
+    -ms-overflow-style: none;  
+    scrollbar-width: none; 
+    overflow: auto; 
+    height: 100%;
+    margin: 0; 
+  }
+
+ 
+

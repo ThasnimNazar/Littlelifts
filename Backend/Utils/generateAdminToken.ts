@@ -15,6 +15,7 @@ const generateAdmintoken = (res: Response,  userId: Types.ObjectId) => {
     };
 
     res.cookie('adminJwt', jwtToken, cookieOptions);
+    return jwtToken
 };
 
 export default generateAdmintoken;

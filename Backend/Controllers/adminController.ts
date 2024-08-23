@@ -4,13 +4,28 @@ import bcrypt from 'bcryptjs';
 import Admin, { AdminDocument } from '../Models/adminModel';
 import generateAdmintoken from '../Utils/generateAdminToken';
 import Sitter from '../Models/sitterModel';
-import Parent from '../Models/parentModel'
+import Parent from '../Models/parentModel';
+import Subscriptionplan from '../Models/subscriptionModel'
 import mongoose from 'mongoose';
+import Booking from '../Models/bookingModel';
 
 interface LoginData {
     email: string;
     password: string;
+
 }
+
+interface SubscriptionBody{
+    name:string,
+    price:number,
+    features:string[];
+    billingcycle:string;
+    maxcredits:number;
+    description:string;
+    isActive:boolean;
+}
+
+
 
 const registerAdmin = asyncHandler(async (req: Request, res: Response) => {
     try {
@@ -44,20 +59,23 @@ const registerAdmin = asyncHandler(async (req: Request, res: Response) => {
             name,
             email,
             password: hashedPassword,
+            role:'admin'
         }) as AdminDocument;
 
         await user.save();
 
         if (user) {
-            generateAdmintoken(res, user._id);
+         const token =  generateAdmintoken(res, user._id);
+            
 
             const registeredUserData = {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                role:user.role
             };
 
-            res.status(201).json({ message: 'Registration successful', admin: registeredUserData });
+            res.status(201).json({ message: 'Registration successful', admin: registeredUserData, token:token });
         } else {
             res.status(400).json({ message: 'Invalid user data, registration failed' });
         }
@@ -91,6 +109,10 @@ const adminLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Res
 
         if (admin) {
             passwordValid = await bcrypt.compare(password, admin.password)
+            if(!admin.role){
+                admin.role ='admin'
+                await admin.save();
+            }
             console.log(passwordValid, 'll')
 
         }
@@ -98,15 +120,16 @@ const adminLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Res
         if (passwordValid) {
             console.log('hey')
 
-            generateAdmintoken(res, admin._id); // Middleware to Generate token and send it back in response object
+            const token = generateAdmintoken(res, admin._id); 
 
             const registeredAdminData = {
                 name: admin.name,
-                email: admin.email
+                email: admin.email,
+                role: admin.role
             }
 
 
-            res.status(201).json({message:'login successfully',admin:registeredAdminData});
+            res.status(201).json({message:'login successfully',admin:registeredAdminData,token:token,role:admin?.role});
 
         }
 
@@ -345,8 +368,140 @@ const unblockParent = asyncHandler(async(req:Request,res:Response)=>{
     
 })
 
+const addSubscription = asyncHandler(async(req:Request<{},{},SubscriptionBody>,res:Response)=>{
+    try{
+     const { name,price,features,billingcycle,maxcredits,isActive,description} = req.body;
+     const subscription = await Subscriptionplan.findOne({name});
+
+     if(subscription){
+        res.status(401).json({message:'plan already exists'})
+     }
+
+     const newSubscription = new Subscriptionplan({
+        name:name,
+        price:price,
+        features:features,
+        billingcycle:billingcycle,
+        maxcredits:maxcredits,
+        isActive:isActive,
+        description:description
+     })
+
+     await newSubscription.save();
+
+     res.status(200).json({message:'plan created successfully',newSubscription})
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const editSubscription = async(req: Request<{ id: string }, {}, SubscriptionBody>, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, price, billingcycle, description } = req.body;
+
+        const subscription = await Subscriptionplan.findOne({ _id:id });
+
+        if (!subscription) {
+            return res.status(404).json({ message: 'Subscription not found' });
+        }
+
+        if (name) subscription.name = name;
+        if (price) subscription.price = price;
+        if (billingcycle) subscription.billingcycle = billingcycle;
+        if (description) subscription.description = description;
+
+        await subscription.save();
+        res.status(200).json({ message: 'Subscription updated successfully', subscription });
+
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+};
+
+const getSubscriptions = asyncHandler(async(req:Request,res:Response)=>{
+     try{
+         const subscriptions = await Subscriptionplan.find({})
+         if(!subscriptions){
+          res.status(400).json({message:'subsscriptions not found'})
+         }
+
+         res.status(200).json({subscriptions})
+     }
+     catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getEditsubscription = asyncHandler(async(req:Request<{id:string}>,res:Response)=>{
+    try{
+        const { id } = req.params;
+        const subscriptionFind = await Subscriptionplan.findById({_id:id});
+
+        if(!subscriptionFind){
+            res.status(404).json({message:'subscription not found'})
+            return;
+        }
+
+        res.status(200).json({subscriptions:subscriptionFind})
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getBookingHistory = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+        const bookings = await Booking.find({})
+        .populate({ path: 'parent', select: 'name' })
+        .populate({ path: 'sitter', select: 'name' });
+      if(!bookings){
+        res.status(200).json({message:'bookings not found'})
+      }
+
+      res.status(200).json({bookings})  
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
 
 
 export {
-    registerAdmin, adminLogin, adminLogout, getallParent,getSitters,verifySitter,blockSitter,unblockSitter,getParent,blockParent,unblockParent
+    registerAdmin, adminLogin, adminLogout, getallParent,getSitters,verifySitter,blockSitter,unblockSitter,getParent,
+    blockParent,unblockParent,addSubscription, editSubscription, getSubscriptions,getEditsubscription,
+    getBookingHistory
 };

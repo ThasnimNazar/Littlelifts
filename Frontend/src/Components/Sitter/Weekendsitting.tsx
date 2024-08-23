@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../Store';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -36,9 +34,16 @@ const newTimeSlot: TimeSlot = {
     error: null,
 };
 
+interface DateSelectInfo {
+    startStr: string;
+    endStr: string;
+    allDay: boolean;
+    start: Date;
+    end: Date;
+}
+
 const Weekendsitting: React.FC<WeekendsittingProps> = ({ selectedOptionid }) => {
     const selectedOptionId = selectedOptionid;
-    const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
 
     const [availableDates, setAvailableDates] = useState<{ date: Date; timeslots: TimeSlot[] }[]>([]);
     const [offDates, setOffDates] = useState<Date[]>([]);
@@ -46,7 +51,7 @@ const Weekendsitting: React.FC<WeekendsittingProps> = ({ selectedOptionid }) => 
     const navigate = useNavigate();
     const today = new Date().toISOString().split('T')[0];
 
-    const handleDateSelect = (info: any) => {
+    const handleDateSelect = (info: DateSelectInfo) => {
         const selectedDate = new Date(info.startStr);
         if (availableDates.some(date => date.date.getTime() === selectedDate.getTime())) {
             toast({
@@ -91,23 +96,31 @@ const Weekendsitting: React.FC<WeekendsittingProps> = ({ selectedOptionid }) => 
         const date = new Date(newTimeSlots[dateIndex].date);
         date.setHours(hours, minutes, 0, 0);
     
-        // Convert to UTC
         const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
         newTimeSlots[dateIndex].timeslots[slotIndex][type] = utcDate;
     
-        // Validation and overlapping check
         const { startTime, endTime } = newTimeSlots[dateIndex].timeslots[slotIndex];
+    
         const validationError = validateTimeSlot(startTime, endTime);
         newTimeSlots[dateIndex].timeslots[slotIndex].error = validationError;
     
         if (!validationError) {
             const overlappingSlot = newTimeSlots[dateIndex].timeslots.find((slot, i) => {
                 if (i !== slotIndex) {
-                    return (
-                        (startTime && slot.startTime && startTime >= slot.startTime && startTime < slot.endTime) ||
-                        (endTime && slot.endTime && endTime > slot.startTime && endTime <= slot.endTime) ||
-                        (startTime && endTime && slot.startTime && slot.endTime && startTime <= slot.startTime && endTime >= slot.endTime)
-                    );
+                    const slotStart = slot.startTime;
+                    const slotEnd = slot.endTime;
+                    const start = startTime;
+                    const end = endTime;
+    
+                    if (start == null || end == null || slotStart == null || slotEnd == null) {
+                        return false;
+                    }
+    
+                    const startOverlap = start >= slotStart && start < slotEnd;
+                    const endOverlap = end > slotStart && end <= slotEnd;
+                    const encompasses = start <= slotStart && end >= slotEnd;
+    
+                    return startOverlap || endOverlap || encompasses;
                 }
                 return false;
             });
@@ -120,13 +133,15 @@ const Weekendsitting: React.FC<WeekendsittingProps> = ({ selectedOptionid }) => 
         setAvailableDates(newTimeSlots);
     };
     
+    
+    
+    
+    
 
-   // Utility function to format time without seconds
-const formatTimeWithoutSeconds = (date) => {
-    return date.toISOString().substr(0, 16); 
+const formatTimeWithoutSeconds = (date:Date | string) => {
+    return new Date(date).toISOString().substr(0, 16);
 };
 
-// Formatting and preparing data to save
 const handleSaveDates = async () => {
     if (!availableDates.length) {
         toast({
@@ -236,6 +251,7 @@ const handleSaveDates = async () => {
         const newOffDate = new Date(e.target.value);
 
         const dates = availableDates.map(dateObj => dateObj.date);
+        console.log(dates)
 
         const overlapsWithAvailableDate = availableDates.some(dateObj => {
             const date1 = new Date(dateObj.date);

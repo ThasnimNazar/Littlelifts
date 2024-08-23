@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isBlocked = exports.postReview = exports.markSeen = exports.getMessages = exports.sendMessage = exports.createChat = exports.bookingsParent = exports.getSlots = exports.getName = exports.getAvailabledates = exports.filterBabysittersByDate = exports.searchBabysitters = exports.resendOtp = exports.resetparentPassword = exports.parentpasswordOtp = exports.forgotPassword = exports.verifyOtp = exports.parentLogout = exports.editProfile = exports.getProfile = exports.listSitter = exports.parentLogin = exports.registerParent = void 0;
+exports.updateSeen = exports.getAllreviews = exports.getLastmessage = exports.lastSeen = exports.updateLastseen = exports.getReviews = exports.getUser = exports.removeFavourites = exports.getFavourites = exports.addFavourites = exports.getSubscription = exports.isBlocked = exports.postReview = exports.markSeen = exports.getMessages = exports.sendMessage = exports.createChat = exports.bookingsParent = exports.getSlots = exports.getName = exports.getAvailabledates = exports.filterBabysittersByDate = exports.searchBabysitters = exports.resendOtp = exports.resetparentPassword = exports.parentpasswordOtp = exports.forgotPassword = exports.verifyOtp = exports.parentLogout = exports.editProfile = exports.getProfile = exports.listSitter = exports.parentLogin = exports.registerParent = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -32,6 +32,9 @@ const chatModel_1 = __importDefault(require("../Models/chatModel"));
 const messageModel_1 = __importDefault(require("../Models/messageModel"));
 const reviewModel_1 = __importDefault(require("../Models/reviewModel"));
 const socket_1 = require("../Connections/socket");
+const subscriptionModel_1 = __importDefault(require("../Models/subscriptionModel"));
+const favouritesModel_1 = __importDefault(require("../Models/favouritesModel"));
+const usersubscriptionModel_1 = __importDefault(require("../Models/usersubscriptionModel"));
 const uploadSinglePromise = (0, util_1.promisify)(upload_1.uploadSingle);
 const uploadChatPromise = (0, util_1.promisify)(upload_1.uploadChatImage);
 const registerParent = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -54,17 +57,23 @@ const registerParent = (0, express_async_handler_1.default)((req, res) => __awai
             phoneno,
             password: hashedPassword,
             selectedchildcategory,
+            role: 'parent'
         });
         yield parent.save();
         console.log(parent, 'pp');
+        const role = parent.role;
+        console.log(role, 'role');
         yield sendOTPVerificationEmail({ id: parent._id, email: parent.email }, res);
-        (0, generateParentToken_1.default)(res, parent._id);
+        const token = (0, generateParentToken_1.default)(res, parent._id);
+        console.log(token, 'kk');
         res.status(200).json({
             _id: parent._id,
             name,
             email,
             phoneno: phoneno,
             selectedchildcategory,
+            parentToken: token,
+            role
         });
     }
     catch (error) {
@@ -194,8 +203,8 @@ const parentLogin = (0, express_async_handler_1.default)((req, res) => __awaiter
             res.status(400).json({ message: 'Incorrect password' });
             return;
         }
-        (0, generateParentToken_1.default)(res, parentExists._id);
-        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully' });
+        const token = (0, generateParentToken_1.default)(res, parentExists._id);
+        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully', parentToken: token, role: parentExists === null || parentExists === void 0 ? void 0 : parentExists.role });
     }
     catch (error) {
         if (error instanceof Error) {
@@ -227,7 +236,7 @@ const listSitter = (0, express_async_handler_1.default)((req, res) => __awaiter(
             res.status(400).json({ message: 'Radius must be a positive number.' });
             return;
         }
-        const radiusInRadians = radiusInKm / 6371; // Convert radius to radians
+        const radiusInRadians = radiusInKm / 6371;
         console.log('Latitude:', latitude);
         console.log('Longitude:', longitude);
         console.log('Radius in km:', radiusInKm);
@@ -707,7 +716,11 @@ const sendMessage = (0, express_async_handler_1.default)((req, res) => __awaiter
         });
         yield message.save();
         console.log(message, 'msg');
-        yield chatModel_1.default.findByIdAndUpdate(chatId, { $push: { messages: message._id } }, { new: true });
+        yield chatModel_1.default.findByIdAndUpdate(chatId, {
+            $push: { messages: message._id },
+            lastMessage: content,
+            lastMessageTimestamp: new Date(timestamp)
+        }, { new: true });
         res.status(200).json({ message });
     }
     catch (error) {
@@ -741,6 +754,28 @@ const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter
     }
 }));
 exports.getMessages = getMessages;
+const getLastmessage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { chatId } = req.params;
+        const chat = yield chatModel_1.default.findById(chatId).populate('lastMessage')
+            .exec();
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found' });
+        }
+        res.status(200).json({ chat });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+});
+exports.getLastmessage = getLastmessage;
 const markSeen = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { chatId, userId } = req.body;
@@ -819,3 +854,278 @@ const isBlocked = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     }
 }));
 exports.isBlocked = isBlocked;
+const getSubscription = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const subscription = yield subscriptionModel_1.default.find({});
+        if (!subscription) {
+            res.status(404).json({ message: 'subscription not found' });
+            return;
+        }
+        res.status(200).json({ subscription });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getSubscription = getSubscription;
+const addFavourites = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId, parentId } = req.body;
+        const sitter = yield sitterModel_1.default.findById(sitterId);
+        if (!sitter) {
+            res.status(404).json({ message: 'sitter not found' });
+            return;
+        }
+        const parent = yield parentModel_1.default.findById(parentId);
+        if (!parent) {
+            res.status(404).json({ message: 'Parent not found' });
+            return;
+        }
+        const favourites = yield favouritesModel_1.default.findOne({ parent: parentId });
+        if (favourites) {
+            if (favourites.sitters.includes(sitterId)) {
+                res.status(400).json({ message: 'babysitter is already added to favourites' });
+                return;
+            }
+            favourites.sitters.push(sitterId);
+            yield favourites.save();
+            res.status(200).json({ message: 'babysitter addedd successfully' });
+            return;
+        }
+        else {
+            const newFavourites = new favouritesModel_1.default({
+                sitters: [sitterId],
+                parent: parentId
+            });
+            yield newFavourites.save();
+            console.log(newFavourites, 'fav');
+            res.status(200).json({ message: "Added to favourites" });
+        }
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.addFavourites = addFavourites;
+const getFavourites = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { parentId } = req.params;
+        const favourites = yield favouritesModel_1.default.findOne({ parent: parentId }).populate({ path: 'sitters', select: 'name email phoneno profileImage' })
+            .set('strictPopulate', false);
+        console.log(favourites, 'favs');
+        if (!favourites) {
+            res.status(400).json({ message: 'no favourites to display' });
+            return;
+        }
+        res.status(200).json({ favourites });
+        return;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getFavourites = getFavourites;
+const removeFavourites = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId } = req.body;
+        const { parentId } = req.params;
+        const id = new mongoose_1.default.Types.ObjectId(parentId);
+        const favourites = yield favouritesModel_1.default.findOne({ parent: parentId });
+        console.log(favourites, 'll');
+        if (!favourites) {
+            res.status(404).json({ message: 'fav sitters not found' });
+            return;
+        }
+        if (!(favourites === null || favourites === void 0 ? void 0 : favourites.sitters.includes(sitterId))) {
+            res.status(404).json({ message: 'sitter not found in the favourites' });
+            return;
+        }
+        favourites.sitters.pull(sitterId);
+        yield favourites.save();
+        res.status(200).json({ message: 'removed babysitters from favourites' });
+        return;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.removeFavourites = removeFavourites;
+const getUser = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { parentId } = req.params;
+        const userSubscription = yield usersubscriptionModel_1.default.findOne({ userId: parentId });
+        console.log(userSubscription, 'uu');
+        if (!userSubscription) {
+            res.status(404).json({ message: 'subscription not found' });
+            return;
+        }
+        res.status(200).json({ userSubscription });
+        return;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getUser = getUser;
+const getReviews = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId } = req.params;
+        console.log(sitterId);
+        const review = yield reviewModel_1.default.find({ sitter: sitterId });
+        if (!review) {
+            res.status(404).json({ message: 'review not found' });
+            return;
+        }
+        res.status(200).json({ review });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getReviews = getReviews;
+const updateLastseen = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { parentId } = req.params;
+        const updateParent = yield parentModel_1.default.findByIdAndUpdate(parentId, {
+            lastseen: new Date()
+        }, {
+            new: true
+        });
+        if (!updateParent) {
+            return res.status(404).json({ message: 'Parent not found' });
+        }
+        res.status(200).json({ lastseen: updateParent.lastseen });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+});
+exports.updateLastseen = updateLastseen;
+const lastSeen = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sitterId } = req.query;
+        console.log(sitterId, 'id');
+        const sitter = yield sitterModel_1.default.findById(sitterId);
+        if (!sitter) {
+            res.status(404).json({ message: 'sitter not found' });
+            return;
+        }
+        const lastseen = sitter === null || sitter === void 0 ? void 0 : sitter.lastseen;
+        res.status(200).json(lastseen);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.lastSeen = lastSeen;
+const getAllreviews = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const reviews = yield reviewModel_1.default.find({}).populate({ path: 'parent', select: 'profileImage name' });
+        if (!reviews) {
+            res.status(400).json({ message: "reviews not found" });
+            return;
+        }
+        res.status(200).json({ reviews });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getAllreviews = getAllreviews;
+const updateSeen = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { chatId } = req.query;
+        const { parentId } = req.params;
+        console.log(parentId, 'parentid-seen');
+        console.log(chatId, 'chatidddd');
+        if (!parentId || !chatId) {
+            return res.status(400).json({ message: 'parentId and chatId are required' });
+        }
+        const unseenMessages = yield messageModel_1.default.find({
+            chat: chatId,
+            seenBy: { $ne: parentId }
+        });
+        if (unseenMessages.length === 0) {
+            return res.status(200).json({ message: 'No unseen messages' });
+        }
+        for (const message of unseenMessages) {
+            message.seenBy.push(parentId);
+            yield message.save();
+        }
+        res.status(200).json({ message: 'Messages marked as seen' });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+});
+exports.updateSeen = updateSeen;

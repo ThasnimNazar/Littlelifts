@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ObjectId } from 'mongoose';
 
 interface AdminInfo {
-  _id: ObjectId;  
+  _id: string;  
   name: string;
   email: string;
+  
 }
 
 interface AdminState {

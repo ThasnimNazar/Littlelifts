@@ -14,6 +14,8 @@ const generateParentToken = (res: Response, parentId: Types.ObjectId) => {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
+
+    return token;   
 };
 
 export default generateParentToken;

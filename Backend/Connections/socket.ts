@@ -41,9 +41,6 @@ const initializeSocketIO = (server: http.Server) => {
             console.log(`Message sent to room ${chat}:`, message);
           });
 
-        socket.on('markSeen', ({ chatId, userId }) => {
-            io.to(chatId).emit('messagesMarkedSeen', { userId });
-        });
 
         socket.on('offer', (data) => {
             socket.to(data.roomId).emit('offer', data.offer);

@@ -8,7 +8,7 @@ import parentOtp from '../Models/parentotpModel';
 import generateParentToken from '../Utils/generateParentToken';
 import Sitter from '../Models/sitterModel';
 import sendOTP from '../Helper/otpHelper';
-import { uploadSingle,uploadChatImage,uploadVideo,uploadFields } from '../Connections/upload'
+import { uploadSingle, uploadChatImage, uploadVideo, uploadFields } from '../Connections/upload'
 import WeekendSitting from '../Models/weekendsittingModel';
 import OccasionalSitting from '../Models/occasionalsittingModel';
 import SpecialCareSitting from '../Models/specialcareModel';
@@ -19,8 +19,11 @@ import { occasionalSitting } from '../Models/occasionalsittingModel'
 import { AvailabelDates, TimeSlot, specialcareSitting } from '../Models/specialcareModel'
 import Chat from '../Models/chatModel'
 import Message from '../Models/messageModel'
-import  Review from '../Models/reviewModel'
+import Review from '../Models/reviewModel'
 import { getSocketIOInstance } from '../Connections/socket'
+import Subscriptionplan from '../Models/subscriptionModel'
+import Favourites from '../Models/favouritesModel';
+import Usersubscription from '../Models/usersubscriptionModel';
 
 const uploadSinglePromise = promisify(uploadSingle);
 const uploadChatPromise = promisify(uploadChatImage);
@@ -34,6 +37,10 @@ interface ParentData {
     phoneno: number;
     noofchildrens: number;
     selectedchildcategory: string;
+}
+
+interface UpdateData{
+ chatId:string;
 }
 
 interface User {
@@ -86,12 +93,12 @@ interface ChatRequest {
     sitterId: string;
 }
 
-interface MessageBody{
-    chatId : string;
-    senderId : string;
-    content : string;
-    timestamp:string;
-    imageUrl:string
+interface MessageBody {
+    chatId: string;
+    senderId: string;
+    content: string;
+    timestamp: string;
+    imageUrl: string
 }
 
 
@@ -121,20 +128,27 @@ const registerParent = asyncHandler(async (req: Request<{}, {}, ParentData>, res
             phoneno,
             password: hashedPassword,
             selectedchildcategory,
+            role: 'parent'
+            
         });
 
         await parent.save();
         console.log(parent, 'pp');
+        const role = parent.role;
+        console.log(role,'role')
 
         await sendOTPVerificationEmail({ id: parent._id, email: parent.email }, res);
 
-        generateParentToken(res, parent._id);
+        const token = generateParentToken(res, parent._id);
+        console.log(token,'kk')
         res.status(200).json({
             _id: parent._id,
             name,
             email,
             phoneno: phoneno,
             selectedchildcategory,
+            parentToken:token,
+            role
         });
     } catch (error) {
         if (error instanceof Error) {
@@ -273,8 +287,8 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
             return;
         }
 
-        if(parentExists.blocked){
-            res.status(401).json({message:'your account is blocked'})
+        if (parentExists.blocked) {
+            res.status(401).json({ message: 'your account is blocked' })
             return;
         }
 
@@ -285,8 +299,8 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
             return;
         }
 
-        generateParentToken(res, parentExists._id);
-        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully' });
+        const token = generateParentToken(res, parentExists._id);
+        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully',parentToken:token,role:parentExists?.role });
     } catch (error) {
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
@@ -321,7 +335,7 @@ const listSitter = asyncHandler(async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        const radiusInRadians = radiusInKm / 6371; // Convert radius to radians
+        const radiusInRadians = radiusInKm / 6371;
 
         console.log('Latitude:', latitude);
         console.log('Longitude:', longitude);
@@ -352,7 +366,7 @@ const listSitter = asyncHandler(async (req: Request, res: Response): Promise<voi
         res.status(200).json({ sitters: babysitters, total });
     } catch (error) {
         console.error('Error while listing sitters:', error);
-        res.status(500).json({ message: 'An unknown error occurred' });   
+        res.status(500).json({ message: 'An unknown error occurred' });
     }
 });
 
@@ -844,8 +858,8 @@ const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: R
 })
 
 
-const sendMessage = asyncHandler(async(req:Request<{},{},MessageBody>,res:Response)=>{
-    try{
+const sendMessage = asyncHandler(async (req: Request<{}, {}, MessageBody>, res: Response) => {
+    try {
         await new Promise<void>((resolve, reject) => {
             uploadFields(req, res, (err: any) => {
                 if (err) {
@@ -856,34 +870,38 @@ const sendMessage = asyncHandler(async(req:Request<{},{},MessageBody>,res:Respon
             });
         });
 
-          
+
         const { chatId, senderId, content, timestamp } = req.body;
-        console.log(req.body,'jj')
+        console.log(req.body, 'jj')
         const imageUrl = req.files && (req.files as any).image ? (req.files as any).image[0].location : '';
         const videoUrl = req.files && (req.files as any).video ? (req.files as any).video[0].location : '';
         const audioUrl = req.files && (req.files as any).audio ? (req.files as any).audio[0].location : '';
 
-        
+
 
         const message = new Message({
-            chat:chatId,
-            sender:senderId,
-            content:content,
+            chat: chatId,
+            sender: senderId,
+            content: content,
             timestamp: new Date(timestamp),
             ImageUrl: imageUrl || '',
             VideoUrl: videoUrl || '',
             AudioUrl: audioUrl || '',
-          });
-      
-          await message.save();
-          console.log(message,'msg')
-      
-          await Chat.findByIdAndUpdate(
+        });
+
+        await message.save();
+        console.log(message, 'msg')
+
+        await Chat.findByIdAndUpdate(
             chatId,
-            { $push: { messages: message._id } },
+            {
+                $push: { messages: message._id },
+                lastMessage: content,
+                lastMessageTimestamp: new Date(timestamp)
+            },
             { new: true }
-          );
-        res.status(200).json({message})
+        );
+        res.status(200).json({ message })
     }
     catch (error) {
         if (error instanceof Error) {
@@ -896,17 +914,17 @@ const sendMessage = asyncHandler(async(req:Request<{},{},MessageBody>,res:Respon
     }
 })
 
-const getMessages = asyncHandler(async(req:Request<{chatId:string}>,res:Response)=>{
-    try{
-      const { chatId } = req.params;
-      const messages = await Message.find({ chat:chatId }).sort({ timestamp: 1 });
-      console.log(messages,'mes')   
-      res.status(200).json({messages});
+const getMessages = asyncHandler(async (req: Request<{ chatId: string }>, res: Response) => {
+    try {
+        const { chatId } = req.params;
+        const messages = await Message.find({ chat: chatId }).sort({ timestamp: 1 });
+        console.log(messages, 'mes')
+        res.status(200).json({ messages });
     }
     catch (error) {
         if (error instanceof Error) {
             console.error(error.message);
-            res.status(500).json({ message: error.message });  
+            res.status(500).json({ message: error.message });
         } else {
             console.error('An unknown error occurred');
             res.status(500).json({ message: 'An unknown error occurred' });
@@ -914,101 +932,423 @@ const getMessages = asyncHandler(async(req:Request<{chatId:string}>,res:Response
     }
 })
 
-const markSeen = asyncHandler(async(req:Request,res:Response)=>{
-    try{
+const getLastmessage = async (req: Request<{ chatId: string }>, res: Response) => {
+    try {
+        const { chatId } = req.params;
+        const chat = await Chat.findById(chatId).populate('lastMessage')
+            .exec();
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found' });
+        }
+
+        res.status(200).json({ chat })
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}
+
+const markSeen = asyncHandler(async (req: Request, res: Response) => {
+    try {
         const { chatId, userId } = req.body;
 
         const io = getSocketIOInstance();
         await Message.updateMany(
             { chat: chatId, seenBy: { $ne: userId } },
             { $push: { seenBy: userId } }
-          );
+        );
+
+        res.status(200).json({ message: 'Messages marked as seen' });
+
+        io.to(chatId).emit('messagesMarkedSeen', { userId });
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const postReview = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { review, rating, bookingId } = req.body;
+        console.log(req.body)
+
+        const bookings = await Booking.findById(bookingId).populate('sitter parent');
+        if (!bookings) {
+            res.status(404).json({ message: 'booking not found' })
+            return;
+        }
+
+        const newReview = new Review({
+            booking: bookingId,
+            sitter: bookings.sitter._id,
+            parent: bookings.parent._id,
+            rating: rating,
+            comment: review
+        })
+
+        await newReview.save();
+
+        bookings.reviewSubmitted = true;
+        await bookings.save();
+
+        res.status(200).json({ newReview })
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const isBlocked = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { parentId } = req.query;
+        const parent = await Parent.findById({ _id: parentId })
+        if (!parent) {
+            res.status(404).json({ message: 'parent not found' })
+            return;
+        }
+
+        if (parent.blocked) {
+            res.status(200).json({ parent, message: 'You are blocked' })
+            return;
+
+        }
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getSubscription = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const subscription = await Subscriptionplan.find({})
+        if (!subscription) {
+            res.status(404).json({ message: 'subscription not found' })
+            return;
+        }
+
+        res.status(200).json({ subscription })
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const addFavourites = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { sitterId, parentId } = req.body;
+        const sitter = await Sitter.findById(sitterId)
+        if (!sitter) {
+            res.status(404).json({ message: 'sitter not found' })
+            return;
+        }
+
+        const parent = await Parent.findById(parentId)
+        if (!parent) {
+            res.status(404).json({ message: 'Parent not found' })
+            return;
+        }
+
+        const favourites = await Favourites.findOne({ parent: parentId })
+        if (favourites) {
+            if (favourites.sitters.includes(sitterId)) {
+                res.status(400).json({ message: 'babysitter is already added to favourites' })
+                return;
+            }
+            favourites.sitters.push(sitterId)
+            await favourites.save();
+            res.status(200).json({ message: 'babysitter addedd successfully' })
+            return;
+
+        }
+        else {
+            const newFavourites = new Favourites({
+                sitters: [sitterId],
+                parent: parentId
+            })
+            await newFavourites.save()
+            console.log(newFavourites, 'fav')
+
+            res.status(200).json({ message: "Added to favourites" })
+        }
+
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getFavourites = asyncHandler(async (req: Request<{ parentId: string }>, res: Response) => {
+    try {
+        const { parentId } = req.params;
+        const favourites = await Favourites.findOne({ parent: parentId }).populate({ path: 'sitters', select: 'name email phoneno profileImage' })
+            .set('strictPopulate', false);
+        console.log(favourites, 'favs')
+        if (!favourites) {
+            res.status(400).json({ message: 'no favourites to display' })
+            return;
+        }
+
+        res.status(200).json({ favourites })
+        return;
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const removeFavourites = asyncHandler(async (req: Request<{ parentId: string }>, res: Response) => {
+    try {
+        const { sitterId } = req.body;
+        const { parentId } = req.params;
+        const id = new mongoose.Types.ObjectId(parentId)
+        const favourites = await Favourites.findOne({ parent: parentId })
+        console.log(favourites, 'll')
+        if (!favourites) {
+            res.status(404).json({ message: 'fav sitters not found' })
+            return;
+        }
+
+        if (!favourites?.sitters.includes(sitterId)) {
+            res.status(404).json({ message: 'sitter not found in the favourites' })
+            return;
+        }
+
+        (favourites.sitters as Types.Array<Types.ObjectId>).pull(sitterId);
+        await favourites.save();
+        res.status(200).json({ message: 'removed babysitters from favourites' })
+        return;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getUser = asyncHandler(async (req: Request<{ parentId: string }>, res: Response) => {
+    try {
+        const { parentId } = req.params;
+        const userSubscription = await Usersubscription.findOne({ userId: parentId })
+        console.log(userSubscription, 'uu')
+        if (!userSubscription) {
+            res.status(404).json({ message: 'subscription not found' })
+            return;
+        }
+
+        res.status(200).json({ userSubscription })
+        return;
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getReviews = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { sitterId } = req.params;
+        console.log(sitterId)
+        const review = await Review.find({ sitter: sitterId })
+        if (!review) {
+            res.status(404).json({ message: 'review not found' })
+            return;
+        }
+
+        res.status(200).json({ review })
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const updateLastseen = async (req: Request<{ parentId: string }>, res: Response) => {
+    try {
+        const { parentId } = req.params;
+
+        const updateParent = await Parent.findByIdAndUpdate(
+            parentId,
+            {
+                lastseen: new Date()
+            },
+            {
+                new: true
+            }
+        )
+
+        if (!updateParent) {
+            return res.status(404).json({ message: 'Parent not found' });
+        }
+
+        res.status(200).json({ lastseen: updateParent.lastseen })
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+
+}
+
+const lastSeen = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { sitterId } = req.query;
+        console.log(sitterId, 'id')
+        const sitter = await Sitter.findById(sitterId)
+        if (!sitter) {
+            res.status(404).json({ message: 'sitter not found' })
+            return
+        }
+
+        const lastseen = sitter?.lastseen
+        res.status(200).json(lastseen)
+
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const getAllreviews = asyncHandler(async(req:Request,res:Response)=>{
+    try{
+      const reviews = await Review.find({}).populate({path:'parent',select:'profileImage name'})
+      if(!reviews){
+        res.status(400).json({message:"reviews not found"})
+        return
+      }
+
+      res.status(200).json({reviews})
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+})
+
+const updateSeen = async(req:Request<{parentId:string}>,res:Response)=>{
+    try{
+        const { chatId } = req.query;
+        const { parentId } = req.params;
+        console.log(parentId,'parentid-seen')
+        console.log(chatId,'chatidddd')       
+
+        if (!parentId || !chatId) {
+            return res.status(400).json({ message: 'parentId and chatId are required' });
+        }
+
+        const unseenMessages = await Message.find({
+            chat: chatId,      
+            seenBy: { $ne: parentId }  
+        })
+
+       
+
+        if (unseenMessages.length === 0) {
+            return res.status(200).json({ message: 'No unseen messages' });
+          }
+      
+          for (const message of unseenMessages) {
+            message.seenBy.push(parentId);
+            await message.save();  
+          }
       
           res.status(200).json({ message: 'Messages marked as seen' });
-      
-          io.to(chatId).emit('messagesMarkedSeen', { userId });
+
 
     }
     catch (error) {
         if (error instanceof Error) {
             console.error(error.message);
-            res.status(500).json({ message: error.message });  
+            res.status(500).json({ message: error.message });
         } else {
             console.error('An unknown error occurred');
             res.status(500).json({ message: 'An unknown error occurred' });
         }
     }
-})
-
-const postReview = asyncHandler(async(req:Request,res:Response)=>{
-    try{
-     const { review, rating, bookingId } = req.body;
-     console.log(req.body)
-
-     const bookings = await Booking.findById( bookingId ).populate('sitter parent');
-     if(!bookings){
-        res.status(404).json({message:'booking not found'})
-        return;
-     }
-
-     const newReview = new Review({
-        booking : bookingId,
-        sitter:bookings.sitter._id,
-        parent:bookings.parent._id,
-        rating:rating,
-        comment:review
-     })
-
-     await newReview.save();
-
-     bookings.reviewSubmitted = true;
-     await bookings.save();
-     
-     res.status(200).json({newReview})
-
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error(error.message);
-            res.status(500).json({ message: error.message });  
-        } else {
-            console.error('An unknown error occurred');
-            res.status(500).json({ message: 'An unknown error occurred' });
-        }
-    }
-})
-
-const isBlocked = asyncHandler(async(req:Request,res:Response)=>{
-    try{
-       const { parentId } = req.query;
-       const parent = await Parent.findById({ _id:parentId}) 
-       if(!parent){
-        res.status(404).json({message:'parent not found'})   
-        return;
-       }
-
-       if(parent.blocked)
-       {
-        res.status(200).json({parent,message:'You are blocked'})
-        return;
-
-       }       
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error(error.message);
-            res.status(500).json({ message: error.message });  
-        } else {
-            console.error('An unknown error occurred');
-            res.status(500).json({ message: 'An unknown error occurred' });
-        }
-    }
-})
+}   
 
 
 
 export {
     registerParent, parentLogin, listSitter, getProfile, editProfile, parentLogout, verifyOtp, forgotPassword, parentpasswordOtp,
     resetparentPassword, resendOtp, searchBabysitters, filterBabysittersByDate, getAvailabledates, getName, getSlots,
-    bookingsParent, createChat,sendMessage, getMessages,markSeen,postReview,isBlocked
+    bookingsParent, createChat, sendMessage, getMessages, markSeen, postReview, isBlocked, getSubscription, addFavourites, getFavourites,
+    removeFavourites, getUser, getReviews, updateLastseen, lastSeen, getLastmessage,getAllreviews,updateSeen
 };

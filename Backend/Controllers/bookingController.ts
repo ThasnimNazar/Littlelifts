@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 import { Request, Response } from 'express';
 import { Types, Model, Mongoose } from 'mongoose'
 import { Server } from 'socket.io';
-import Sitter,{ SitterDocument } from '../Models/sitterModel'
+import Sitter, { SitterDocument } from '../Models/sitterModel'
 import Parent, { ParentDocument } from '../Models/parentModel'
 import Booking, { bookingDocument } from '../Models/bookingModel'
 import Stripe from 'stripe'
@@ -12,6 +12,9 @@ import OccasionalSitting from '../Models/occasionalsittingModel';
 import SpecialCareSitting from '../Models/specialcareModel';
 import Wallet from '../Models/walletModel';
 import { getSocketIOInstance } from '../Connections/socket'
+import Subscriptionplan from '../Models/subscriptionModel'
+import Usersubscription from '../Models/usersubscriptionModel'
+import Chat from '../Models/chatModel'
 
 
 
@@ -36,12 +39,12 @@ interface BookingRequestBody {
 }
 
 interface ReasonBody {
-    reason:string;
+    reason: string;
 }
 
 function stripSeconds(date: Date): Date {
     const newDate = new Date(date);
-    newDate.setSeconds(0, 0); 
+    newDate.setSeconds(0, 0);
     return newDate;
 }
 
@@ -49,14 +52,13 @@ function stripSeconds(date: Date): Date {
 
 const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Response) => {
     try {
-        const { sitterId } = req.params
+        const { sitterId } = req.params;
         let { selectedDate, startTime, endTime } = req.body;
-        console.log(startTime,endTime,'booked times')
+
         const sitterObjectId = new Types.ObjectId(sitterId);
-        console.log(req.body, 'body')
-        const sitter = await Sitter.findById({ _id: sitterObjectId })
+        const sitter = await Sitter.findById({ _id: sitterObjectId });
         if (!sitter) {
-            res.status(404).json({ message: 'sitter not found' })
+            res.status(404).json({ message: 'Sitter not found' });
             return;
         }
 
@@ -66,21 +68,9 @@ const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Respo
         }
 
         const parentId = req.parent._id;
-        const parent = await Parent.findById({ _id: parentId })
+        const parent = await Parent.findById({ _id: parentId });
         if (!parent) {
-            res.status(404).json({ message: 'parent not found' })
-            return;
-        }
-
-        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-        if (!stripeSecretKey) {
-            res.status(500).json({ message: 'Stripe secret key not configured' });
-            return;
-        }
-
-        const clientUrl = process.env.CLIENT_SITE_URL;
-        if (!clientUrl) {
-            res.status(500).json({ message: 'client url not configured' });
+            res.status(404).json({ message: 'Parent not found' });
             return;
         }
 
@@ -96,9 +86,56 @@ const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Respo
             return;
         }
 
-        const stripe = new Stripe(stripeSecretKey)
+        const userSubscription = await Usersubscription.findOne({ userId:parentId,isPaid:true });
 
-        //create stripe checkout session
+        console.log(userSubscription,'sub')
+
+        if (userSubscription) {
+            const booking = new Booking({
+                sitter: sitter._id,
+                parent: parent._id,
+                servicepay: sitter.servicepay,
+                status: 'Pending',
+                isPaid: true, 
+                selectedDate,
+                timeSlot: {
+                    startTime,
+                    endTime
+                }
+            });
+            
+            await booking.save();
+
+
+            const io = getSocketIOInstance();
+            io.to(`babysitter_${sitter._id}`).emit('bookingNotification', {
+                message: 'You have a new booking!',
+                bookingDetails: {
+                    selectedDate,
+                    startTime,
+                    endTime,
+                    parentName: parent.name,
+                },
+            });
+
+            res.status(200).json({ booking });
+            return;
+        }
+
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            res.status(500).json({ message: 'Stripe secret key not configured' });
+            return;
+        }
+
+        const clientUrl = process.env.CLIENT_SITE_URL;
+        if (!clientUrl) {
+            res.status(500).json({ message: 'Client URL not configured' });
+            return;
+        }
+
+        const stripe = new Stripe(stripeSecretKey);
+
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'payment',
@@ -114,35 +151,42 @@ const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Respo
                         product_data: {
                             name: sitter.name,
                             description: sitter.about,
-                            images: [sitter.profileImage]
-
-                        }
+                            images: [sitter.profileImage],
+                        },
                     },
-                    quantity: 1
-                }
-            ]
-        })
-
+                    quantity: 1,
+                },
+            ],
+        });
 
         const booking = new Booking({
             sitter: sitter._id,
             parent: parent._id,
             servicepay: sitter.servicepay,
-            status: ['Pending'],
+            status: 'Pending',
             isPaid: false,
-            sessionId: session.id,   
+            sessionId: session.id,
             selectedDate,
             timeSlot: {
                 startTime,
-                endTime
-            }
+                endTime,
+            },
         });
 
+        console.log(session.payment_intent,'ss')
+
+
+        if (typeof session.payment_intent === 'string') {
+            booking.chargeId = session.payment_intent;
+        } else if (session.payment_intent && typeof session.payment_intent === 'object') {
+            booking.chargeId = session.payment_intent.id; 
+        } else {
+            booking.chargeId = '';
+        }
+        
         await booking.save();
-        console.log(booking, 'book')
 
         const io = getSocketIOInstance();
-
         io.to(`babysitter_${sitter._id}`).emit('bookingNotification', {
             message: 'You have a new booking!',
             bookingDetails: {
@@ -152,10 +196,10 @@ const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Respo
                 parentName: parent.name,
             },
         });
-        res.status(200).json({ message: 'booked successfully', session })
 
-    }
-    catch (error) {
+        res.status(200).json({ message: 'Booking created. Please complete payment.', session });
+        return;
+    } catch (error) {
         if (error instanceof Error) {
             console.log(error.message);
             res.status(500).json({ message: error.message });
@@ -164,8 +208,8 @@ const confirmBooking = async (req: CustomRequest<BookingRequestBody>, res: Respo
             res.status(500).json({ message: 'An unknown error occurred' });
         }
     }
+};
 
-}
 
 
 
@@ -175,6 +219,7 @@ const bookingApproval = asyncHandler(async (req: Request<{ bookingId: string }>,
         const { bookingId } = req.params;
 
         const booking = await Booking.findById(bookingId);
+        console.log(booking, 'book')
         if (!booking) {
             res.status(404).json({ message: 'Booking not found' });
             return;
@@ -239,12 +284,12 @@ const bookingApproval = asyncHandler(async (req: Request<{ bookingId: string }>,
 
         console.log(timeSlot, 'tiiiii')
 
-        if (!timeSlot) {
+        if (!timeSlot && timeSlot === 'undefined') {
             res.status(404).json({ message: 'Time slot not found' });
             return;
         }
 
-        (timeSlot as any).status = 'unavailable';
+        (timeSlot as any).bookingStatus = 'approved';
         await slot.save();
         console.log(slot, 'sloooooo')
 
@@ -291,14 +336,14 @@ const bookingRejection = async (req: SitterRequest<ReasonBody>, res: Response) =
         }
 
         const booking = await Booking.findById(bookingId);
-        
+
         if (!booking) {
             res.status(404).json({ message: 'Booking not found' });
             return;
         }
 
         const parent = booking.parent;
-        
+
 
         const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
@@ -346,8 +391,127 @@ const bookingRejection = async (req: SitterRequest<ReasonBody>, res: Response) =
     }
 }
 
-const handleStripeWebhook = async (req: Request, res: Response) => {
+const confirmSubscription = async(req:CustomRequest<{ subscriptionId:string }>,res:Response)=>{
+    try{
+        const { subscriptionId } = req.params; 
+        const selectedPlan = await Subscriptionplan.findById(subscriptionId);
+        console.log(selectedPlan,'plan')
 
+        if(!selectedPlan){
+            res.status(404).json({message:"plan not found"})
+        }
+
+        const price = selectedPlan?.price;
+        const name = selectedPlan?.name;
+
+        if (price === undefined || price === null) {
+            return res.status(400).json({ message: "Plan price is not defined" });
+        }
+        if (name === undefined || name === null) {
+            return res.status(400).json({ message: "Plan name is not defined" });
+        }
+
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY as string;
+        if (!stripeSecretKey) {
+            res.status(500).json({ message: 'Stripe secret key not configured' });
+            return;
+        }
+
+        const clientUrl = process.env.CLIENT_SITE_URLS;
+        if (!clientUrl) {
+            res.status(500).json({ message: 'client url not configured' });
+            return;
+        }
+
+        if (!req.parent) {
+            res.status(401).json({ message: 'Parent not authenticated' });
+            return;
+        }
+
+        const parentId = req.parent._id;
+        const parent = await Parent.findById({ _id: parentId });
+        if (!parent) {
+            res.status(404).json({ message: 'Parent not found' });
+            return;
+        }
+
+        const stripe = new Stripe(stripeSecretKey);
+
+        if (selectedPlan && selectedPlan.price === 0) {
+            const newSubscription = new Usersubscription({
+                userId: parent._id,
+                planId: subscriptionId, 
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 
+                status: ['Active'],
+                credit: 0,
+                isPaid:false,
+                autoRenewal: false,
+                paymentMethod: 'Free',
+                paymentHistory: [],
+            });
+
+            await newSubscription.save();
+
+            res.status(200).json({ message: 'Subscribed to Free Tier successfully' });
+        } else {
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                mode: 'subscription',
+                success_url: `${clientUrl}`,
+                cancel_url: `${req.protocol}://${req.get('host')}/subscription-cancel`,
+                customer_email: parent.email,
+                client_reference_id: subscriptionId,
+                line_items: [
+                  {
+                    price_data: {
+                      currency: 'inr',
+                      unit_amount: price * 100,
+                      recurring: {
+                        interval: 'month',
+                      },
+                      product_data: {  
+                        name: name,
+                      }
+                    },
+                    quantity: 1
+                  }
+                ],
+              });
+
+            const newSubscription = new Usersubscription({
+                userId: parent._id,
+                planId: subscriptionId,
+                startDate: new Date(),
+                status: ['Active'],
+                isPaid: true,
+                sessionId: session.id,
+                paymentMethod: 'Card',
+                paymentHistory: [{
+                    amount:price,
+                    date:Date.now(),
+                    method:'card'
+                }],
+            });
+
+            await newSubscription.save();
+
+            res.status(200).json({ message: 'Subscription initiated successfully', session })
+    }
+}
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        } else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}
+
+const handleStripeWebhook = async (req: Request, res: Response) => {
+    console.log('webhook')
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     console.log(stripeSecretKey, 'stripe key')
 
@@ -355,12 +519,13 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Stripe secret key not configured' });
         return;
     }
-    const stripe = new Stripe(stripeSecretKey)
+    const stripe = new Stripe(stripeSecretKey)    
 
     let event: Stripe.Event;
 
     try {
         event = req.body;
+        console.log(event,'event')
 
         switch (event.type) {
             case 'checkout.session.completed':
@@ -383,15 +548,15 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
                 break;
             case 'payment_intent.succeeded':
                 const paymentIntent = event.data.object as Stripe.PaymentIntent;
-                console.log(paymentIntent,'paymentIntent');
+                console.log(paymentIntent, 'paymentIntent');
 
-                const succeededBooking = await Booking.findOne({ sessionId : paymentIntent.id });
+                const succeededBooking = await Booking.findOne({ sessionId: paymentIntent.id });
                 if (succeededBooking) {
                     succeededBooking.chargeId = paymentIntent.id;
                     succeededBooking.isPaid = true;
                     await succeededBooking.save();
                 }
-                console.log(succeededBooking,'suc')
+                console.log(succeededBooking, 'suc')
                 break;
 
             case 'payment_intent.created':
@@ -411,7 +576,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
 
             case 'charge.refunded':
                 const refundedCharge = event.data.object as Stripe.Charge;
-                console.log(refundedCharge , 'cgarge');
+                console.log(refundedCharge, 'cgarge');
                 const chargeId = refundedCharge.id;
                 const payIntentId = refundedCharge.payment_intent;
 
@@ -422,13 +587,13 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
                     await refundedBooking.save();
 
                     const parent = await Parent.findById(refundedBooking.parent);
-                    console.log(parent,'parent')
+                    console.log(parent, 'parent')
                     if (parent) {
                         const wallet = await Wallet.findOne({ parentId: parent._id });
                         const amount = typeof refundedBooking.servicepay === 'string'
                             ? parseFloat(refundedBooking.servicepay)
                             : refundedBooking.servicepay;
-                        console.log(amount,'amount')
+                        console.log(amount, 'amount')
                         if (wallet) {
                             wallet.balance += amount;
                             await wallet.save();
@@ -437,7 +602,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
                                 parentId: parent._id,
                                 balance: amount,
                             });
-                            console.log(newWallet,'new')
+                            console.log(newWallet, 'new')
                             await newWallet.save();
                         }
                     }
@@ -465,6 +630,58 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
                     await updatedBooking.save();
                 }
                 break;
+
+
+            case 'invoice.payment_succeeded':
+                const invoice = event.data.object as Stripe.Invoice;
+                const subscriptionId = invoice.subscription as string;
+                const customerId = invoice.customer as string;
+
+                const paymentIntentForInvoice = await stripe.paymentIntents.retrieve(invoice.payment_intent as string);
+
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+                const userSubscription = await Usersubscription.findOne({ planId: subscriptionId });
+                if (userSubscription) {
+                    userSubscription.status = ['Active'];
+                    userSubscription.endDate = new Date(subscription.current_period_end * 1000);
+                    await userSubscription.save();
+                } else {
+                    const newSubscription = new Usersubscription({
+                        userId: customerId,
+                        planId: subscriptionId,
+                        startDate: new Date(subscription.current_period_start * 1000),
+                        endDate: new Date(subscription.current_period_end * 1000),
+                        status: ['Active'],
+                        credit: 0,
+                        autoRenewal: subscription.cancel_at_period_end === false,
+                        paymentMethod: paymentIntentForInvoice.payment_method,
+                        paymentHistory: [{ amount: invoice.amount_paid / 100, date: new Date(), method: 'Stripe' }],
+                    });
+                    await newSubscription.save();
+                }
+                break;
+
+            case 'invoice.payment_failed':
+                const failedInvoice = event.data.object as Stripe.Invoice;
+                const failedSubscriptionId = failedInvoice.subscription as string;
+
+                const failedUserSubscription = await Usersubscription.findOne({ planId: failedSubscriptionId });
+                if (failedUserSubscription) {
+                    failedUserSubscription.status = ['Inactive'];
+                    await failedUserSubscription.save();
+                }
+                break;
+
+            case 'customer.subscription.deleted':
+                const deletedSubscription = event.data.object as Stripe.Subscription;
+
+                const canceledSubscription = await Usersubscription.findOne({ planId: deletedSubscription.id });
+                if (canceledSubscription) {
+                    canceledSubscription.status = ['Cancelled'];
+                    await canceledSubscription.save();
+                }
+                break;
             default:
                 console.log(`Unhandled event type ${event.type}`);
         }
@@ -477,18 +694,52 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
     }
 };
 
-const getBookedsitters = asyncHandler(async(req:Request<{parentId:string}>,res:Response)=>{
-    try{
+
+
+const getBookedsitters = asyncHandler(async (req: Request<{ parentId: string }>, res: Response) => {
+    try {
         const { parentId } = req.params;
-        const findSitters = await Booking.find({ parent: parentId,status:'Approved' })
-        .populate({
-            path: 'sitter',
-            select: '-password',
-        })
-        res.status(200).json({sitter:findSitters})
 
-    }
-    catch (error) {
+        const findSitters = await Booking.find({ parent: parentId, status: 'Approved' })
+            .populate({
+                path: 'sitter',
+                select: '-password',
+            });
+
+
+            const uniqueSitters = new Map();
+
+            await Promise.all(
+                findSitters.map(async (booking: any) => {
+                    const sitterId = booking.sitter._id.toString();
+    
+                    if (uniqueSitters.has(sitterId)) {
+                        return;
+                    }
+    
+                    const chat = await Chat.findOne({
+                        participants: { $all: [sitterId, parentId] }
+                    })
+                        .sort({ lastMessageTimestamp: -1 })
+                        .populate('messages', 'content timestamp')
+                        .limit(1);
+    
+                    const lastMessage = chat ? chat.lastMessage : null;
+                    const lastMessagedTime = chat ? chat.lastMessageTimestamp : null;
+    
+                    uniqueSitters.set(sitterId, {
+                        sitter: booking.sitter,
+                        lastMessage,
+                        lastMessagedTime
+                    });
+                })
+            );
+
+        const sittersWithLastMessage = Array.from(uniqueSitters.values());
+
+        res.status(200).json({ sitters: sittersWithLastMessage });
+
+    } catch (error) {
         if (error instanceof Error) {
             console.log(error.message);
             res.status(500).json({ message: error.message });
@@ -497,18 +748,51 @@ const getBookedsitters = asyncHandler(async(req:Request<{parentId:string}>,res:R
             res.status(500).json({ message: 'An unknown error occurred' });
         }
     }
-})
+});
 
-const getBookedparents = asyncHandler(async(req:Request<{sitterId:string}>,res:Response)=>{
-    try{
+
+const getBookedparents = asyncHandler(async (req: Request<{ sitterId: string }>, res: Response) => {
+    try {
         const { sitterId } = req.params;
-        const findParent = await Booking.find({ sitter: sitterId,status:'Approved' })
-        .populate({
-            path: 'parent',
-            select: '-password',
-        })
-        res.status(200).json({parent:findParent})
 
+        const findParent = await Booking.find({ sitter: sitterId, status: 'Approved' })
+            .populate({
+                path: 'parent',
+                select: '-password',
+            });
+
+        const uniqueParents = new Map();
+        console.log(uniqueParents,'pp')
+
+        await Promise.all(
+            findParent.map(async (booking: any) => {
+                const parentId = booking.parent._id.toString();
+
+                if (uniqueParents.has(parentId)) {
+                    return;
+                }
+
+                const chat = await Chat.findOne({
+                    participants: { $all: [sitterId, parentId] }
+                })
+                    .sort({ lastMessageTimestamp: -1 })
+                    .populate('messages', 'content timestamp')
+                    .limit(1);
+
+                const lastMessage = chat ? chat.lastMessage : null;
+                const lastMessagedTime = chat ? chat.lastMessageTimestamp : null;
+
+                uniqueParents.set(parentId, {
+                    parent: booking.parent,
+                    lastMessage,
+                    lastMessagedTime
+                });
+            })
+        );
+
+        const parentWithLastMessage = Array.from(uniqueParents.values());
+
+        res.status(200).json({ parent: parentWithLastMessage });
     }
     catch (error) {
         if (error instanceof Error) {
@@ -519,9 +803,11 @@ const getBookedparents = asyncHandler(async(req:Request<{sitterId:string}>,res:R
             res.status(500).json({ message: 'An unknown error occurred' });
         }
     }
-})
+});
 
 
-export { confirmBooking, bookingApproval, bookingRejection, handleStripeWebhook, getBookedsitters,
-    getBookedparents
- }
+
+export {
+    confirmBooking, bookingApproval, bookingRejection, handleStripeWebhook, getBookedsitters,
+    getBookedparents, confirmSubscription
+}

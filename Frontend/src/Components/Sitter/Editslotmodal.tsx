@@ -4,9 +4,31 @@ import { RootState } from '../../Store';
 import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
 
-const EditSlotModal = ({ slot, existingTimeslots, onClose }) => {
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+interface Slot {
+  _id: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface ExistingTimeslot {
+  startTime: string;
+  endTime: string;
+}
+
+interface EditSlotModalProps {
+  slot: Slot;
+  existingTimeslots: ExistingTimeslot[];
+  onClose: () => void;
+}
+
+type TimeString = `${number}:${number}`;
+
+
+
+
+const EditSlotModal:React.FC<EditSlotModalProps> = ({ slot, existingTimeslots, onClose }) => {
+  const [startTime, setStartTime] = useState<TimeString>('00:00');
+  const [endTime, setEndTime] = useState<TimeString>('00:00');
   const [validationError, setValidationError] = useState('');
 
   const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
@@ -14,7 +36,6 @@ const EditSlotModal = ({ slot, existingTimeslots, onClose }) => {
   const toast = useToast();
 
   useEffect(() => {
-    // Format start and end times to local time
     if (slot) {
       const start = new Date(slot.startTime);
       const end = new Date(slot.endTime);
@@ -23,10 +44,10 @@ const EditSlotModal = ({ slot, existingTimeslots, onClose }) => {
     }
   }, [slot]);
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTime = (date: Date): TimeString => {
+    const formatted = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) as TimeString;
+    return formatted;
   };
-
   const validateTimeslot = () => {
     const [startHour, startMinute] = startTime.split(":").map(Number);
     const newStartTime = new Date(2000, 0, 1, startHour, startMinute);
@@ -114,7 +135,7 @@ const EditSlotModal = ({ slot, existingTimeslots, onClose }) => {
             <input
               type="time"
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={(e) => setStartTime(e.target.value as TimeString)}
               className="mt-1 block w-full px-3 py-2 font-mono border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
@@ -123,7 +144,7 @@ const EditSlotModal = ({ slot, existingTimeslots, onClose }) => {
             <input
               type="time"
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              onChange={(e) =>  setEndTime(e.target.value as TimeString)}
               className="mt-1 block w-full px-3 py-2 font-mono border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>

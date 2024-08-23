@@ -31,6 +31,18 @@ const parentSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    lastseen: {
+        type: Date,
+        default: Date.now()
+    },
+    role: {
+        type: String,
+        default: 'parent'
+    },
+    bookingCount: {
+        type: Number,
+        default: 0
+    },
 });
 const Parent = (0, mongoose_1.model)('Parent', parentSchema);
 exports.default = Parent;

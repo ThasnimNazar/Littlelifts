@@ -5,6 +5,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../Store';
 import { format } from 'date-fns';
 import useSocket from '../Socket/Usesocket';
+import axios from 'axios'
+import api from '../../Axiosconfig'
+import { useToast } from '@chakra-ui/react';
 
 interface Message {
     _id: string;
@@ -47,6 +50,7 @@ const formatTime = (timestamp?: string) => {
 
 const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessage, onSendMessage }) => {
     const [message, setMessage] = useState<string>('');
+    const [lastseen, setLastseen] = useState<string>('')
     const [video, setVideo] = useState<File | null>(null)
     const [audio, setAudio] = useState<File | null>(null)
     const [image, setImage] = useState<File | null>(null);
@@ -59,6 +63,10 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
     const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
     const sitterId = sitterInfo?._id;
     const socket = useSocket();
+    const toast = useToast();
+    const parentId = parent._id;
+    const id = chatId
+    console.log(id, 'chatid')
 
     const handleSendMessage = () => {
         if (message.trim() || image || video || audio) {
@@ -79,6 +87,123 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
             setImage(null);
         }
     }
+
+    useEffect(() => {
+        const updateSeen = async () => {
+            try {
+                const response = await axios.put(`/api/sitter/post-lastseen/${sitterId}?chatId=${id}`);
+                console.log(response);
+            }
+            catch (error) {
+                if (axios.isAxiosError(error) && error.response) {
+                    toast({
+                        title: 'Error',
+                        description: error.response.data.message || 'An unknown error occurred',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                } else {
+                    toast({
+                        title: 'Error',
+                        description: 'An unknown error occurred',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                }
+            }
+        }
+        updateSeen()
+    }, [chatId,toast,sitterId])
+
+    useEffect(() => {
+        const postLastseen = async () => {
+            try {
+                const response = await api.post(`/last-seen/${sitterId}`)
+                console.log(response)
+            }
+            catch (error) {
+                if (axios.isAxiosError(error) && error.response) {
+                    toast({
+                        title: 'Error',
+                        description: error.response.data.message || 'An unknown error occurred',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                } else {
+                    toast({
+                        title: 'Error',
+                        description: 'An unknown error occurred',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                }
+            }
+        }
+        postLastseen()
+    }, [sitterId,toast])
+
+    console.log(sitterId, 'id')
+
+    const formatLastSeen = (lastSeen: string | null) => {
+        if (!lastSeen) return 'Offline';
+
+        const lastSeenTime = new Date(lastSeen).getTime();
+        const now = Date.now();
+        const timeDifference = now - lastSeenTime;
+
+        const minutes = Math.floor(timeDifference / 60000);
+
+        if (minutes < 1) return 'Online';
+        if (minutes <= 60) return `Last seen ${minutes} minutes ago`;
+        if (minutes <= 1440) return `Last seen ${Math.floor(minutes / 60)} hours ago`;
+
+        return format(new Date(lastSeen), 'PPpp');
+    };
+
+    useEffect(() => {
+        const getLastseen = async () => {
+            try {
+                const response = await api.get('/get-lastseen', {
+                    params: {
+                        parentId
+                    }
+                })
+                setLastseen(response.data.lastseen)
+            }
+            catch (error) {
+                if (axios.isAxiosError(error) && error.response) {
+                    toast({
+                        title: 'Error',
+                        description: error.response.data.message || 'An unknown error occurred',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                } else {
+                    toast({
+                        title: 'Error',
+                        description: 'An unknown error occurred',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                }
+            }
+        }
+        getLastseen()
+    }, [toast])
+
+    console.log(localStream,remoteStream)
 
     useEffect(() => {
         if (socket) {
@@ -111,7 +236,7 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
                 socket.off('candidate');
             };
         }
-    }, [chatId]);
+    }, []);
 
     const startVideoCall = async () => {
         setIsCalling(true);
@@ -154,9 +279,10 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
     return (
         <div className="relative flex flex-col flex-grow h-full px-4 justify-end" style={{ backgroundColor: 'white' }}>
             <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between bg-white">
-                <div className="flex items-center">
-                    <img src={parent.profileImage} alt={parent.name} className="w-12 h-12 rounded-full mr-4 object-cover" />
+                <img src={parent.profileImage} alt={parent.name} className="w-12 h-12 rounded-full mr-2 object-cover" />
+                <div className="flex flex-col">
                     <span className="font-bold text-lg">{parent.name}</span>
+                    <span className="text-sm text-gray-500">{formatLastSeen(lastseen)}</span>
                 </div>
                 <FontAwesomeIcon icon={faVideo} className="text-gray-800 hover:text-emerald-600 cursor-pointer" onClick={startVideoCall} />
             </div>

@@ -1,20 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../Store';
+import {  DateSelectArg, EventClickArg,DateSpanApi } from '@fullcalendar/core'; // Use core package for types
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { useToast } from '@chakra-ui/react';
-import { format } from 'date-fns';
+import { useState, useEffect } from 'react';
 import AddSlotModal from './Addslotmodal';
 import EditSlotModal from './Editslotmodal';
-import '../../Css/Admin/Sitter/Fullcalendar.css';
+import { format } from 'date-fns';
+
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date | string;
+  end?: Date | string;
+  color?: string;
+  allDay?: boolean;
+}
+
+
+
 
 interface TimeSlot {
   _id: string;
-  startTime: Date | string;
-  endTime: Date | string;
+  startTime: string;
+  endTime: string;
+  error: string | null;
 }
+
 
 interface OccasionalData {
   availableDates: {
@@ -28,14 +40,12 @@ interface OffdatesData {
 }
 
 const Occasionalslot: React.FC<OccasionalData & OffdatesData> = ({ availableDates, offDates }) => {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showAddSlotModal, setShowAddSlotModal] = useState<boolean>(false);
   const [editableSlot, setEditableSlot] = useState<TimeSlot | null>(null);
   const [showEditSlotModal, setShowEditSlotModal] = useState<boolean>(false);
-  const toast = useToast();
-
-  const { sitterInfo } = useSelector((state: RootState) => state.sitterAuth);
+ 
 
   useEffect(() => {
     updateEvents();
@@ -76,7 +86,7 @@ const Occasionalslot: React.FC<OccasionalData & OffdatesData> = ({ availableDate
     setEvents([...formattedEvents, ...formattedOffEvents]);
   };
 
-  const handleDateSelect = (selectInfo: any) => {
+  const handleDateSelect = (selectInfo: DateSelectArg) => {
     const { start } = selectInfo;
     const selected = new Date(start);
 
@@ -93,7 +103,8 @@ const Occasionalslot: React.FC<OccasionalData & OffdatesData> = ({ availableDate
     }
   };
 
-  const handleSelectAllow = (selectInfo: any) => {
+  const handleSelectAllow = (selectInfo: DateSpanApi) => {
+    console.log(selectInfo)
     return true;
   };
 
@@ -102,9 +113,9 @@ const Occasionalslot: React.FC<OccasionalData & OffdatesData> = ({ availableDate
     setSelectedDate(null);
   };
 
-  const handleEventClick = (clickInfo: any) => {
+  const handleEventClick = (clickInfo: EventClickArg) => {
     const { event } = clickInfo;
-    const { id, start, end } = event;
+    const { id } = event;
 
     if (!id.startsWith('off-')) {
       const selectedSlot = findSlotById(id);
@@ -167,7 +178,6 @@ const Occasionalslot: React.FC<OccasionalData & OffdatesData> = ({ availableDate
       {showAddSlotModal && selectedDate && (
         <AddSlotModal
           startDate={selectedDate}
-          existingTimeslots={findExistingDate(selectedDate)?.timeslots || []}
           onClose={handleModalClose}
         />
       )}

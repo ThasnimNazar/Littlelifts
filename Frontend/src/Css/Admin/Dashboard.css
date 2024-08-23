@@ -1,0 +1,9 @@
+.dashboard-container::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.dashboard-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

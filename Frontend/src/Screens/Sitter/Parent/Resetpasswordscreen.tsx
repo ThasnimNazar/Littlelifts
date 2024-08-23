@@ -5,6 +5,8 @@ import { useSelector } from 'react-redux'
 import axios from 'axios'
 import Loader from '../../../Loader'
 import { RootState } from '../../../Store'
+import api from '../../../Axiosconfig'
+
 
 interface FormErrors {
     [key: string]: string;
@@ -44,7 +46,7 @@ const Resetpasswordscreen : React.FC = () =>{
             } else
             {
         try{
-          const response = await axios.post('/api/parent/reset-password',{
+          const response = await api.post('/reset-password',{
             password,confirmPassword
           })
           if(response.status === 200){

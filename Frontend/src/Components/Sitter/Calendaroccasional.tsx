@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
-import { useToast } from '@chakra-ui/react';
 import '../../Css/Admin/Sitter/Fullcalendar.css';
 
 interface CalendarProps {

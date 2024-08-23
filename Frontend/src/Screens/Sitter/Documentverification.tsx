@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { useSelector,useDispatch } from 'react-redux';
-import axios from 'axios'; // Import axios for making HTTP requests
 import { VStack, Button, Text, useToast } from "@chakra-ui/react";
 import Header from '../../Header';
 import { useNavigate } from 'react-router-dom';
-import { setSitterCredentials } from '../../Slices/Sitterslice';
+import api from '../../Axiosconfig';
+
 
 const MAX_IMAGES = 2;
 
@@ -14,12 +13,10 @@ const DocumentVerification: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false); 
   const [success, setSuccess] = useState<string | null>(null);
-  const [sitter,setSitter] = useState<any>({})
 
 
   const toast = useToast();
   const navigate = useNavigate();
-  const dispatch = useDispatch()
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -96,7 +93,7 @@ const DocumentVerification: React.FC = () => {
     if (sitterInfoString) {
       const sitterInfo = JSON.parse(sitterInfoString);
       try {
-        const response = await axios.put(`/api/sitter/upload-doc/${sitterInfo._id}`, formData, {
+        const response = await api.put(`/upload-doc/${sitterInfo._id}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

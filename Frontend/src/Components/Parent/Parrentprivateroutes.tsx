@@ -1,10 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
 import { RootState } from '../../Store';
 import { useNavigate } from 'react-router-dom';
+import api from '../../Axiosconfig'
+
 
 const Parentprivateroutes = () => {
     const [isBlocked, setIsBlocked] = useState<boolean | null>(null);
@@ -12,6 +13,7 @@ const Parentprivateroutes = () => {
     const parentId = parentInfo?._id;
     const toast = useToast();
     const navigate = useNavigate();
+    console.log(isBlocked)
 
     useEffect(() => {
         const blockCheck = async () => {
@@ -21,7 +23,7 @@ const Parentprivateroutes = () => {
             }
 
             try {
-                const response = await axios.get('/api/parent/check-block', {
+                const response = await api.get('/check-block', {
                     params: { parentId }
                 });
                 console.log('Block check response:', response.data);

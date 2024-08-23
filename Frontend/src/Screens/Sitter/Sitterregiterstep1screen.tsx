@@ -8,6 +8,8 @@ import { AxiosError } from 'axios';
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../Store";
+// import api from '../../Axiosconfig';
+
 
 
 interface FormErrors {
@@ -20,11 +22,14 @@ interface SitterInfo {
 	phoneno: string;
 	gender: string;
 	_id: Types.ObjectId;
+	sitterToken:string;
+	role:string
 }
 
 interface RegisterResponse {
 	message: string;
 	sitter: SitterInfo;
+	sitterToken:string;
 }
 
 const Sitterregisterstep1screen: React.FC = () => {
@@ -114,8 +119,14 @@ const Sitterregisterstep1screen: React.FC = () => {
 				const res = await axios.post<RegisterResponse>('/api/sitter', {
 					name, email, phoneno, password, confirmPassword, gender, location: { latitude, longitude }
 				})
+				const response = { ...res }
+				const sitterToken = response.data.sitterToken
+				const role = response.data.sitter.role
+				
 				console.log(res, 'kk')
 				if (res.data) {
+					localStorage.setItem('sitterToken',sitterToken)
+					localStorage.setItem('role',role)
 					localStorage.setItem('sitterInfo', JSON.stringify(res.data.sitter));
 
 					toast({

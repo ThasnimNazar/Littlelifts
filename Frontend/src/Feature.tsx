@@ -1,39 +1,146 @@
-const Feature = () =>{
-    return(
-        <>
-        <section className="p-4 lg:p-8 dark:bg-gray-100 dark:text-gray-800">
-	<div className="container mx-auto space-y-12">
-		<div className="flex flex-col overflow-hidden rounded-md shadow-sm lg:flex-row">
-			<img src="https://source.unsplash.com/640x480/?1" alt="" className="h-80 dark:bg-gray-500 aspect-video" />
-			<div className="flex flex-col justify-center flex-1 p-6 dark:bg-gray-50">
-				<span className="text-xs uppercase dark:text-gray-600">Join, it's free</span>
-				<h3 className="text-3xl font-bold">We're not reinventing the wheel</h3>
-				<p className="my-6 dark:text-gray-600">Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor aliquam possimus quas, error esse quos.</p>
-				<button type="button" className="self-start">Action</button>
+const Feature = () => {
+	return (
+		<>
+			<div className="overflow-hidden mt-10 bg-amber-50 rounded shadow-md text-slate-500 shadow-slate-200 w-full h-72">
+				<h1 className='mt-4 text-center font-bold font-sans'>How we works?</h1>
+				<div className="p-6 flex justify-around items-center"> 
+					<div className='justify-center items-center gap-2'>
+						<svg height="100px" width="100px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xmlSpace="preserve">
+							<circle style={{ fill: '#FFD15D' }} cx="256" cy="256" r="256" />
+							<path style={{ fill: '#F4A200' }} d="M289.209,509.859c108.784-14.093,196.141-96.468,217.679-202.735L346.128,143.201L298.56,197.78 l-94.313-91.152l-20.93,8.376l-8.376-8.376l-22.047,11.941l6.67,14.991l113.464,113.464l-159.804,86.847L289.209,509.859z" />
+							<path style={{ fill: '#FF6472' }} d="M66.488,258.103c0-34.321,27.824-62.145,62.145-62.145s62.145,27.824,62.145,62.145 c0-34.321,27.824-62.145,62.145-62.145s62.145,27.824,62.145,62.145c0,59.425-124.288,130.503-124.288,130.503 S66.488,320.876,66.488,258.103z" />
+							<path style={{ fill: '#C75163' }} d="M190.776,258.103c0-34.321,27.824-62.145,62.145-62.145s62.145,27.824,62.145,62.145 c0,59.425-124.288,130.503-124.288,130.503V258.103H190.776z" />
+							<path style={{ fill: '#FF6472' }} d="M261.525,381.549c0-12.853,10.419-23.273,23.273-23.273c12.853,0,23.273,10.419,23.273,23.273 c0-12.853,10.419-23.273,23.273-23.273s23.273,10.419,23.273,23.273c0,22.254-46.545,48.873-46.545,48.873 S261.525,405.056,261.525,381.549z" />
+							<path style={{ fill: '#C75163' }} d="M308.071,381.549c0-12.853,10.419-23.273,23.273-23.273s23.273,10.419,23.273,23.273 c0,22.254-46.545,48.873-46.545,48.873V381.549z" />
+							<path style={{ fill: '#FF6472' }} d="M149.863,116.919c0-8.092,6.561-14.653,14.653-14.653s14.653,6.561,14.653,14.653 c0-8.092,6.561-14.653,14.653-14.653s14.653,6.561,14.653,14.653c0,14.012-29.306,30.772-29.306,30.772 S149.863,131.72,149.863,116.919z" />
+							<path style={{ fill: '#C75163' }} d="M179.169,116.919c0-8.092,6.561-14.653,14.653-14.653s14.653,6.561,14.653,14.653 c0,14.012-29.306,30.772-29.306,30.772V116.919z" />
+							<path style={{ fill: '#2B3B4E' }} d="M424.827,393.752c-7.501,0-15-2.86-20.723-8.583l-90.85-90.848 c-11.445-11.445-11.447-29.999,0-41.444c11.445-11.445,29.999-11.448,41.444,0l90.85,90.848c11.447,11.445,11.447,29.999,0,41.444 C439.827,390.89,432.326,393.752,424.827,393.752z" />
+							<path style={{ fill: '#202D3A' }} d="M314.139,252.076c-0.293,0.271-0.6,0.515-0.884,0.798c-11.447,11.445-11.445,29.999,0,41.444 l90.85,90.848c5.722,5.723,13.222,8.583,20.723,8.583s15-2.862,20.723-8.583c0.284-0.284,0.528-0.591,0.798-0.883L314.139,252.076z" />
+							<circle style={{ fill: '#B5F1F4' }} cx="273.032" cy="212.644" r="86.195" />
+							<path style={{ fill: '#84DBFF' }} d="M212.94,150.88c-0.284,0.278-0.581,0.538-0.862,0.819c-33.661,33.661-33.661,88.238,0,121.899 s88.236,33.661,121.899,0c0.283-0.283,0.543-0.578,0.821-0.862L212.94,150.88z" />
+							<path style={{ fill: '#FFFFFF' }} d="M273.027,313.497c-26.938,0-52.262-10.49-71.309-29.539v0.002 c-39.321-39.322-39.321-103.302-0.002-142.62c39.324-39.324,103.3-39.322,142.622-0.002c39.321,39.322,39.321,103.302,0,142.622 C325.291,303.007,299.966,313.497,273.027,313.497z M273.027,141.107c-19.11,0-37.076,7.44-50.588,20.954 c-27.895,27.895-27.893,73.282,0.002,101.174l0,0c13.512,13.514,31.477,20.954,50.586,20.954c19.111,0,37.076-7.44,50.588-20.954 c13.514-13.512,20.954-31.479,20.954-50.588s-7.44-37.076-20.954-50.588C310.103,148.547,292.137,141.107,273.027,141.107z" />
+							<path style={{ fill: '#E6F3FF' }} d="M324.436,262.373c-0.276,0.286-0.54,0.581-0.821,0.862c-13.512,13.514-31.477,20.954-50.588,20.954 c-19.11,0-37.074-7.44-50.586-20.954c-27.895-27.895-27.896-73.282-0.002-101.174c0.281-0.281,0.576-0.545,0.862-0.821 l-20.721-20.721c-0.284,0.278-0.581,0.538-0.864,0.821c-39.319,39.321-39.319,103.3,0.002,142.62v-0.002 c19.047,19.049,44.372,29.539,71.309,29.539c26.939,0,52.264-10.49,71.311-29.537c0.283-0.283,0.541-0.578,0.821-0.862 L324.436,262.373z" />
+						</svg>
+						<h2 className='font-bold text-center'>Search<br></br>find your preferences in the area</h2>
+
+
+					</div>
+					<div>
+						<svg height="100px" width="100px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+							viewBox="0 0 512 512" xmlSpace="preserve">
+							<circle style={{ fill: "#FFD15D" }} cx="256" cy="256" r="256" />
+							<path style={{ fill: "#F9B54C" }} d="M257.419,511.983c125.523-0.683,229.655-91.693,250.696-211.344L369.778,162.302l-79.658,90.465
+        L143.658,398.222L257.419,511.983z"/>
+							<polygon style={{ fill: "#FFFFFF" }} points="321.253,113.778 143.658,113.778 143.658,398.222 369.778,398.222 369.778,162.302 " />
+							<polygon style={{ fill: "#E6F3FF" }} points="369.778,162.302 321.253,113.778 237.325,113.778 237.325,398.222 369.778,398.222 " />
+							<polygon style={{ fill: "#CFDBE6" }} points="321.253,162.304 369.778,162.302 321.253,113.778 " />
+							<circle style={{ fill: "#B5F1F" }} cx="237.037" cy="215.143" r="37.9" />
+							<path style={{ fill: "#21ADA9" }} d="M274.937,215.14c0-20.835-16.813-37.736-37.612-37.893v75.785
+        C258.124,252.876,274.937,235.973,274.937,215.14z"/>
+							<path style={{ fill: "#324A5E" }} d="M158.868,334.76c0-43.172,34.997-78.169,78.169-78.169s78.169,34.997,78.169,78.169L158.868,334.76
+        L158.868,334.76z"/>
+							<path style={{ fill: "#2B3B4E" }} d="M237.325,256.6v78.16h77.881C315.206,291.687,280.362,256.755,237.325,256.6z" />
+							<g>
+								<polygon style={{ fill: "#C1321F" }} points="244.145,364.058 233.174,353.087 296.077,290.182 333.714,327.818 404.858,238.889 
+            416.971,248.582 335,351.048 296.077,312.125 "/>
+								<polygon style={{ fill: "#C1321F" }} points="408.926,273.994 405.359,251.471 383.3,253.771 381.69,238.34 418.383,234.515 
+            424.251,271.567 "/>
+							</g>
+						</svg>
+						<h2 className='font-bold text-center'>View Profile<br></br>view profile for information & availability</h2>
+                        
+
+					</div>
+					<div>
+
+						<svg width="100px" height="100" viewBox="0 0 50 50" id="Message_And_Communication_Icons" version="1.1" xmlSpace="preserve" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
+							<g>
+								<g>
+									<g>
+										<g>
+											<path
+												d="M37.4,17.4v3.9L34.9,19h-0.5v-0.6L33.9,18H33l1.1,1h-3.7v-1h-1.1v7.1H16.5l-0.5,0.4 c0.1,0.1,0.2,0.3,0.3,0.4c1,0.6,1.6,1.7,1.6,2.9c0,1.9-1.6,3.4-3.4,3.4c-1.2,0-2.2-0.6-2.8-1.6c-0.9-0.6-1.6-1.7-1.5-2.9 c0-1.7,1.3-3.1,2.9-3.3v-7.1H5.8v19.3h4.4c0,0,0-0.1,0-0.1l-1.1,0c0-2.4,2-4.4,4.5-4.4c1.4,0,2.7,0.7,3.5,1.8 c0.9,0.6,1.5,1.6,1.8,2.7h13.1v-1.8c0-2.4,2-4.4,4.5-4.4c1.4,0,2.7,0.7,3.5,1.8c1.1,0.8,1.9,2.1,1.9,3.7l0,0.7h2.4V17.4H37.4z M37.3,30.5c-1.2,0-2.2-0.6-2.8-1.6c-0.9-0.6-1.6-1.7-1.5-2.9c0-1.9,1.6-3.4,3.4-3.4c1.2,0,2.2,0.6,2.8,1.6 c0.9,0.6,1.6,1.7,1.5,2.9C40.8,29,39.2,30.6,37.3,30.5z"
+												style={{ fill: '#FFD15D' }}
+											/>
+										</g>
+									</g>
+									<g>
+										<polygon points="44.8,38 43.6,38 43.6,15.2 38.6,15.2 38.6,14 44.8,14" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<polygon points="6.4,38 5.2,38 5.2,14 11.1,14 11.1,15.2 6.4,15.2" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<path
+											d="M44.7,42H5.3c-1.2,0-2.1-1-2.1-2.1v-2.5h19v1.2l5.7,0l0-1.3h19v2.5C46.9,41.1,45.9,42,44.7,42z M4.3,38.6v1.3c0,0.5,0.4,0.9,0.9,0.9h39.5c0.5,0,0.9-0.4,0.9-0.9v-1.3l-16.6,0c0,0.7-0.6,1.2-1.2,1.2h-5.7 c-0.7,0-1.2-0.6-1.2-1.2v0H4.3z"
+											style={{ fill: '#0D5FC3' }}
+										/>
+									</g>
+								</g>
+								<g>
+									<g>
+										<path d="M12.5,27.7V14h16.4v10.7H15.8L12.5,27.7z M13.7,15.2V25l1.6-1.5h12.4v-8.3H13.7z" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<rect height="1.2" width="1.8" x="22.3" y="17.5" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<rect height="1.2" width="3.6" x="17.4" y="17.5" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<rect height="1.2" width="6.7" x="17.4" y="20.1" style={{ fill: '#0D5FC3' }} />
+									</g>
+								</g>
+								<g>
+									<g>
+										<polygon points="37,21.6 33.7,18.6 28.5,18.6 28.5,17.4 34.1,17.4 35.8,18.9 35.8,9.2 21.7,9.2 21.7,14.5 20.5,14.5 20.5,8 37,8" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<rect height="1.2" width="1.8" x="25.3" y="11.4" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<rect height="1.2" width="3.6" x="28.4" y="11.4" style={{ fill: '#0D5FC3' }} />
+									</g>
+									<g>
+										<rect height="1.2" width="1.6" x="30.5" y="14" style={{ fill: '#0D5FC3' }} />
+									</g>
+								</g>
+								<g>
+									<g>
+										<path
+											d="M13.6,31.8C13.6,31.8,13.5,31.8,13.6,31.8c-2.3,0-4-1.8-4-4.1c0-2.1,1.7-3.8,3.7-4l0.1,1.2 c-1.4,0.1-2.6,1.3-2.6,2.8c0,0.8,0.3,1.5,0.8,2c0.5,0.5,1.2,0.8,2,0.8c0.8,0,1.5-0.3,2-0.8c0.5-0.5,0.8-1.2,0.8-2 c0-1.1-0.6-2.2-1.7-2.6l0.5-1.1c1.5,0.6,2.4,2.1,2.4,3.7c0,1.1-0.4,2.1-1.2,2.8C15.6,31.4,14.6,31.8,13.6,31.8z"
+											style={{ fill: '#0D5FC3' }}
+										/>
+									</g>
+									<g>
+										<path
+											d="M18.6,36.6l-1.2,0c0-1-0.4-2-1.1-2.7c-0.7-0.7-1.7-1.1-2.7-1.1c0,0,0,0,0,0 c-2.1,0-3.8,1.7-3.8,3.8l-1.2,0c0-2.8,2.3-5,5-5c1.3,0,2.6,0.5,3.5,1.5C18.1,34.1,18.6,35.3,18.6,36.6z"
+											style={{ fill: '#0D5FC3' }}
+										/>
+									</g>
+									<g>
+										<path
+											d="M36.4,31.8c-2.3,0-4-1.8-4-4.1c0-2.1,1.7-3.8,3.7-4l0.1,1.2c-1.4,0.1-2.6,1.3-2.6,2.8c0,0.8,0.3,1.5,0.8,2 c0.5,0.5,1.2,0.8,2,0.8c0.8,0,1.5-0.3,2-0.8c0.5-0.5,0.8-1.2,0.8-2c0-1.1-0.6-2.2-1.7-2.6l0.5-1.1c1.5,0.6,2.4,2.1,2.4,3.7 c0,1.1-0.4,2.1-1.2,2.8C38.4,31.4,37.4,31.8,36.4,31.8z"
+											style={{ fill: '#0D5FC3' }}
+										/>
+									</g>
+									<g>
+										<path
+											d="M41.4,36.6l-1.2,0c0-1-0.4-2-1.1-2.7c-0.7-0.7-1.7-1.1-2.7-1.1c0,0,0,0,0,0 c-2.1,0-3.8,1.7-3.8,3.8l-1.2,0c0-2.8,2.3-5,5-5c1.3,0,2.6,0.5,3.5,1.5C40.9,34.1,41.4,35.3,41.4,36.6z"
+											style={{ fill: '#0D5FC3' }}
+										/>
+									</g>
+								</g>
+							</g>
+						</svg>
+						<h2 className='font-bold text-center'>Connect<br></br>Message or video chat with them then meetup</h2>
+
+
+					</div>
+				</div>
 			</div>
-		</div>
-		<div className="flex flex-col overflow-hidden rounded-md shadow-sm lg:flex-row-reverse">
-			<img src="https://source.unsplash.com/640x480/?2" alt="" className="h-80 dark:bg-gray-500 aspect-video" />
-			<div className="flex flex-col justify-center flex-1 p-6 dark:bg-gray-50">
-				<span className="text-xs uppercase dark:text-gray-600">Join, it's free</span>
-				<h3 className="text-3xl font-bold">We're not reinventing the wheel</h3>
-				<p className="my-6 dark:text-gray-600">Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor aliquam possimus quas, error esse quos.</p>
-				<button type="button" className="self-start">Action</button>
-			</div>
-		</div>
-		<div className="flex flex-col overflow-hidden rounded-md shadow-sm lg:flex-row">
-			<img src="https://source.unsplash.com/640x480/?3" alt="" className="h-80 dark:bg-gray-500 aspect-video" />
-			<div className="flex flex-col justify-center flex-1 p-6 dark:bg-gray-50">
-				<span className="text-xs uppercase dark:text-gray-600">Join, it's free</span>
-				<h3 className="text-3xl font-bold">We're not reinventing the wheel</h3>
-				<p className="my-6 dark:text-gray-600">Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor aliquam possimus quas, error esse quos.</p>
-				<button type="button" className="self-start">Action</button>
-			</div>
-		</div>
-	</div>
-</section>
-        </>
-    )
+		</>
+	)
 }
 
 export default Feature

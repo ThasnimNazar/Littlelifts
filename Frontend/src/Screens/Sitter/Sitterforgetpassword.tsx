@@ -5,6 +5,8 @@ import { useToast } from '@chakra-ui/react'
 import axios from 'axios'
 import { RootState } from '../../Store'
 import Header from '../../Header'
+import api from '../../Axiosconfig';
+
 
 const Sitterforgetpassword:React.FC = () =>{
     const [email,setEmail] = useState<string>('')
@@ -12,13 +14,11 @@ const Sitterforgetpassword:React.FC = () =>{
     const navigate = useNavigate()
     const toast = useToast()
 
-    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const submitHandler = async(e:React.FormEvent<HTMLFormElement>)=>{
         e.preventDefault()
         try{
-            setIsLoading(true)
-         const response = await axios.post('/api/sitter/forget-password',{
+         const response = await api.post('/forget-password',{
             email
          })
          console.log(email)
@@ -33,7 +33,6 @@ const Sitterforgetpassword:React.FC = () =>{
             });
             navigate('/sitter/forget-otp')
          }
-         setIsLoading(false)
 
         }
         catch (error) {

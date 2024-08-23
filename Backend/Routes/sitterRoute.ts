@@ -4,7 +4,8 @@ import { sitterregisterStep1,sitterregisterStep2,sitterregisterStep3,
     uploadVerificationDocuments,getStatus,getsitterProfile,sitterverifyOtp,
     sitresendOtp,sitterforgotPassword,sitterpasswordOtp,
     resetsitterPassword,sitterLogin,editProfile,getSlots,getSittingcategory,geteditSlot,editSlot,
-    getBabysitter,editTimeslot,bookingsList,createChat,sendMessage,getMessages, checkBlocked
+    getBabysitter,editTimeslot,bookingsList,createChat,sendMessage,getMessages, checkBlocked, getReview,
+    lastSeen,getLastseen,lastMsg,postSeen
 } from '../Controllers/sitterController'
 
 import { markSeen } from '../Controllers/parentController'
@@ -57,9 +58,13 @@ sitterroute.get('/booked-parents/:sitterId',protectSitter,getBookedparents)
 sitterroute.post('/createchat',protectSitter,createChat)
 sitterroute.get('/get-messages/:chatId',protectSitter,getMessages)
 sitterroute.post('/send-message',protectSitter,sendMessage)
-sitterroute.post('/mark-seen',protectSitter,markSeen)
-sitterroute.get('/check-block',protectSitter,checkBlocked)   
-
+// sitterroute.post('/mark-seen',protectSitter,markSeen)
+sitterroute.get('/check-block',protectSitter,checkBlocked)
+sitterroute.get('/get-reviews/:sitterId',protectSitter,getReview)
+sitterroute.post('/last-seen/:sitterId',protectSitter,lastSeen)
+sitterroute.get('/get-lastseen',protectSitter,getLastseen) 
+sitterroute.get('/get-lastmsg',protectSitter,lastMsg)
+sitterroute.put('/post-lastseen/:sitterId',protectSitter,postSeen)
 
 
 export default sitterroute

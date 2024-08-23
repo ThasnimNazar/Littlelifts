@@ -12,13 +12,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unblockParent = exports.blockParent = exports.getParent = exports.unblockSitter = exports.blockSitter = exports.verifySitter = exports.getSitters = exports.getallParent = exports.adminLogout = exports.adminLogin = exports.registerAdmin = void 0;
+exports.getBookingHistory = exports.getEditsubscription = exports.getSubscriptions = exports.editSubscription = exports.addSubscription = exports.unblockParent = exports.blockParent = exports.getParent = exports.unblockSitter = exports.blockSitter = exports.verifySitter = exports.getSitters = exports.getallParent = exports.adminLogout = exports.adminLogin = exports.registerAdmin = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const adminModel_1 = __importDefault(require("../Models/adminModel"));
 const generateAdminToken_1 = __importDefault(require("../Utils/generateAdminToken"));
 const sitterModel_1 = __importDefault(require("../Models/sitterModel"));
 const parentModel_1 = __importDefault(require("../Models/parentModel"));
+const subscriptionModel_1 = __importDefault(require("../Models/subscriptionModel"));
+const bookingModel_1 = __importDefault(require("../Models/bookingModel"));
 const registerAdmin = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { name, email, password, adminRegistrationKey } = req.body;
@@ -44,16 +46,18 @@ const registerAdmin = (0, express_async_handler_1.default)((req, res) => __await
             name,
             email,
             password: hashedPassword,
+            role: 'admin'
         });
         yield user.save();
         if (user) {
-            (0, generateAdminToken_1.default)(res, user._id);
+            const token = (0, generateAdminToken_1.default)(res, user._id);
             const registeredUserData = {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                role: user.role
             };
-            res.status(201).json({ message: 'Registration successful', admin: registeredUserData });
+            res.status(201).json({ message: 'Registration successful', admin: registeredUserData, token: token });
         }
         else {
             res.status(400).json({ message: 'Invalid user data, registration failed' });
@@ -84,16 +88,21 @@ const adminLogin = (0, express_async_handler_1.default)((req, res) => __awaiter(
         let passwordValid = false;
         if (admin) {
             passwordValid = yield bcryptjs_1.default.compare(password, admin.password);
+            if (!admin.role) {
+                admin.role = 'admin';
+                yield admin.save();
+            }
             console.log(passwordValid, 'll');
         }
         if (passwordValid) {
             console.log('hey');
-            (0, generateAdminToken_1.default)(res, admin._id); // Middleware to Generate token and send it back in response object
+            const token = (0, generateAdminToken_1.default)(res, admin._id);
             const registeredAdminData = {
                 name: admin.name,
-                email: admin.email
+                email: admin.email,
+                role: admin.role
             };
-            res.status(201).json({ message: 'login successfully', admin: registeredAdminData });
+            res.status(201).json({ message: 'login successfully', admin: registeredAdminData, token: token, role: admin === null || admin === void 0 ? void 0 : admin.role });
         }
         if (!admin || !passwordValid) {
             res.status(401).json({ message: 'Invalid email or password,admin authenticaton failed' });
@@ -319,3 +328,129 @@ const unblockParent = (0, express_async_handler_1.default)((req, res) => __await
     }
 }));
 exports.unblockParent = unblockParent;
+const addSubscription = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { name, price, features, billingcycle, maxcredits, isActive, description } = req.body;
+        const subscription = yield subscriptionModel_1.default.findOne({ name });
+        if (subscription) {
+            res.status(401).json({ message: 'plan already exists' });
+        }
+        const newSubscription = new subscriptionModel_1.default({
+            name: name,
+            price: price,
+            features: features,
+            billingcycle: billingcycle,
+            maxcredits: maxcredits,
+            isActive: isActive,
+            description: description
+        });
+        yield newSubscription.save();
+        res.status(200).json({ message: 'plan created successfully', newSubscription });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.addSubscription = addSubscription;
+const editSubscription = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const { name, price, billingcycle, description } = req.body;
+        const subscription = yield subscriptionModel_1.default.findOne({ _id: id });
+        if (!subscription) {
+            return res.status(404).json({ message: 'Subscription not found' });
+        }
+        if (name)
+            subscription.name = name;
+        if (price)
+            subscription.price = price;
+        if (billingcycle)
+            subscription.billingcycle = billingcycle;
+        if (description)
+            subscription.description = description;
+        yield subscription.save();
+        res.status(200).json({ message: 'Subscription updated successfully', subscription });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+});
+exports.editSubscription = editSubscription;
+const getSubscriptions = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const subscriptions = yield subscriptionModel_1.default.find({});
+        if (!subscriptions) {
+            res.status(400).json({ message: 'subsscriptions not found' });
+        }
+        res.status(200).json({ subscriptions });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.error('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getSubscriptions = getSubscriptions;
+const getEditsubscription = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const subscriptionFind = yield subscriptionModel_1.default.findById({ _id: id });
+        if (!subscriptionFind) {
+            res.status(404).json({ message: 'subscription not found' });
+            return;
+        }
+        res.status(200).json({ subscriptions: subscriptionFind });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getEditsubscription = getEditsubscription;
+const getBookingHistory = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const bookings = yield bookingModel_1.default.find({})
+            .populate({ path: 'parent', select: 'name' })
+            .populate({ path: 'sitter', select: 'name' });
+        if (!bookings) {
+            res.status(200).json({ message: 'bookings not found' });
+        }
+        res.status(200).json({ bookings });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            console.log('An unknown error occurred');
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
+    }
+}));
+exports.getBookingHistory = getBookingHistory;
