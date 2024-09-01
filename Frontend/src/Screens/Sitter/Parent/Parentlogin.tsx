@@ -106,7 +106,7 @@ const Parentlogin: React.FC = () => {
                         <h3 className="text-xl font-semibold text-gray-700 text-center" style={{ fontFamily: "Agrandir, Helvetica, Arial, Lucida, sans-serif" }}>Welcome! Login </h3>
                         <div className="mt-4 flex items-center justify-between">
                             <span className="border-b w-1/5 lg:w-1/4"></span>
-                            <a href="#" className="text-xs text-center text-black uppercase">or Register</a>
+                            <Link to="/parent/parentregister" className="text-xs text-center text-black uppercase">or Register</Link>
                             <span className="border-b w-1/5 lg:w-1/4"></span>
                         </div>
 

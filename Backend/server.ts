@@ -26,7 +26,7 @@ initializeSocketIO(server);
 
 
 const corsOptions = {
-  origin: true,
+  origin: 'http://localhost:5003',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -43,22 +43,18 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser())
+app.use(express.static(path.join(__dirname, "../Frontend/dist")));
 app.use(cors(corsOptions));
 
-const currentWorkingDir = path.resolve();
-const parentDir = path.dirname(currentWorkingDir);
-
-const __dirname = path.resolve();
-    app.use(express.static(path.join(parentDir, "/frontend/dist")));
-    
-    app.get("*", (req, res) =>
-    res.sendFile(path.resolve(parentDir, "frontend", "dist", "index.html"))
-  )
 
 
 app.use('/api/sitter',sitterroute);    
 app.use('/api/admin',adminroute);
 app.use('/api/parent',parentroute);
+
+app.get("*", (req, res) => 
+  res.sendFile(path.resolve(__dirname, "../Frontend/dist", "index.html"))
+);
 
 
 

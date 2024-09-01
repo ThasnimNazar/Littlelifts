@@ -1012,7 +1012,7 @@ exports.bookingsList = bookingsList;
 const createChat = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { sitterId, parentId } = req.body;
-        const sitter = yield sitterModel_1.default.findById({ sitterId });
+        const sitter = yield sitterModel_1.default.findById(sitterId);
         if ((sitter === null || sitter === void 0 ? void 0 : sitter.blocked) === true) {
             res.status(403).json({ message: "Your account is blocked" });
             return;
@@ -1167,8 +1167,13 @@ const getReview = (0, express_async_handler_1.default)((req, res) => __awaiter(v
         const { sitterId } = req.params;
         if (!sitterId) {
             res.status(404).json({ message: 'sitterId is required' });
+            return;
         }
         const review = yield reviewModel_1.default.find({ sitter: sitterId }).populate('parent');
+        if (!review) {
+            res.status(404).json({ message: 'No reviews found for the given sitterId' });
+            return;
+        }
         res.status(200).json({ review });
     }
     catch (error) {
