@@ -21,12 +21,12 @@ const server = http_1.default.createServer(app);
 console.log(server, 'server');
 (0, socket_1.initializeSocketIO)(server);
 const corsOptions = {
-    origin: 'https://localhost:3000',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
-    credentials: true
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    sameSite: 'Lax'
 };
-app.use((0, cors_1.default)(corsOptions));
 app.use((req, res, next) => {
     console.log(`Incoming request: ${req.method} ${req.url}`);
     next();
@@ -34,6 +34,7 @@ app.use((req, res, next) => {
 app.use(express_1.default.json({ limit: '50mb' }));
 app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 app.use((0, cookie_parser_1.default)());
+app.use((0, cors_1.default)(corsOptions));
 app.use('/api/sitter', sitterRoute_1.default);
 app.use('/api/admin', adminRoute_1.default);
 app.use('/api/parent', parentRoute_1.default);

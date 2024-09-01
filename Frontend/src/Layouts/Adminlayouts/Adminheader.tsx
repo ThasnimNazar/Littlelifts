@@ -1,5 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
+import { NavLink } from 'react-router-dom';
 import { RootState } from "../../Store";
 
 
@@ -29,19 +30,19 @@ const Adminheader: React.FC = () => {
           ) : (
             <div className="flex items-center gap-4">
               <div className="sm:flex sm:gap-4">
-                <a
+                <NavLink
                   className="rounded-md bg-white text-black px-5 py-2.5 text-sm font-medium"
-                  href="/admin/login"
+                  to ="/admin/login"
                 >
                   Login
-                </a>
+                </NavLink>
                 <div className="hidden sm:flex">
-                  <a
+                  <NavLink
                     className="rounded-md bg-white px-5 py-2.5 text-sm font-medium text-black"
-                    href="/admin/adminregister"
+                    to="/admin/adminregister"
                   >
                     Register
-                  </a>
+                  </NavLink>
                 </div>
               </div>
               <div className="block md:hidden">

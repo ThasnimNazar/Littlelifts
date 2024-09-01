@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { useToast } from '@chakra-ui/react'
-import api from '../../Axiosconfig';
+import { useToast,Flex,Button,Box } from '@chakra-ui/react'
+import { adminApi } from '../../Axiosconfig';
 
 
 interface CategoryData {
@@ -14,23 +14,26 @@ interface ResponseData {
     category: CategoryData[];
 }
 
-const Managechildcategory : React.FC = () =>{
+const Managechildcategory: React.FC = () => {
     const [categories, setCategories] = useState<CategoryData[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(4);
 
     const navigate = useNavigate();
     const toast = useToast()
 
-    const handleAddcategory = () =>{
+    const handleAddcategory = () => {
         navigate('/admin/adminhome/add-childcategory')
     }
-    
+
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await api.get<ResponseData>('/get-childcategory');
-                console.log(response.data); 
+                const response = await adminApi.get<ResponseData>('/get-childcategory');
+                console.log(response.data);
                 if (response.data) {
                     setCategories(response.data.category);
+
                 }
             }
             catch (error) {
@@ -45,12 +48,13 @@ const Managechildcategory : React.FC = () =>{
             }
         }
         fetchCategory()
-    },[])
+    }, [])
 
-    const handleEditCategory = (categoryId:string) =>{
+
+    const handleEditCategory = (categoryId: string) => {
         navigate(`/admin/adminhome/edit-category/${categoryId}`)
     }
-    
+
     const handleDeleteCategory = (categoryId: string, categoryName: string) => {
         toast({
             title: `Delete ${categoryName}`,
@@ -64,7 +68,7 @@ const Managechildcategory : React.FC = () =>{
                     <button
                         onClick={async () => {
                             try {
-                                await api.delete(`/delete-category/${categoryId}`);
+                                await adminApi.delete(`/delete-category/${categoryId}`);
                                 setCategories(prevCategories => prevCategories.filter(category => category._id !== categoryId));
                                 toast({
                                     title: 'Delete Successful',
@@ -100,13 +104,31 @@ const Managechildcategory : React.FC = () =>{
             ),
         });
     };
- 
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = categories.slice(indexOfFirstItem, indexOfLastItem);
+
+    const totalPages = Math.ceil(categories.length / itemsPerPage);
+
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    }
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    }
 
 
-    return(
+
+    return (
         <>
             <button type="button" onClick={handleAddcategory}
-            className="px-8 py-3 font-semibold rounded bg-black text-white">Add new category
+                className="px-8 py-3 font-semibold rounded bg-black text-white">Add new category
             </button>
             &nbsp;
             <div className="container p-2 mx-auto sm:p-4 dark:text-gray-800">
@@ -129,25 +151,36 @@ const Managechildcategory : React.FC = () =>{
                             </tr>
                         </thead>
                         <tbody>
-                        {categories.map((category) => (
-                             <tr key={category._id} className="border-b border-opacity-20 dark:border-gray-300 dark:bg-gray-50">
-                             <td className="p-3">
-                                 <p className='font-bold'>{category.name}</p>
-                             </td>
-                             <td className="p-3">
-                                 <p className='font-semibold'>{category.description}</p>
-                             </td>
-                             <td className="p-3">
-                                 <button type="button" onClick={()=>handleEditCategory(category._id)} className="px-8 py-3 font-semibold rounded bg-black dark:text-gray-100 text-white">Edit</button>
-                             </td>
-                             <td className="p-3">
-                                 <button type="button"  onClick={() => handleDeleteCategory(category._id, category.name)} className="px-8 py-3 font-semibold rounded bg-red-500 dark:text-gray-100 text-white">delete</button>
-                             </td>
-                         </tr>
-                        ))}
+                            {currentItems.map((category) => (
+                                <tr key={category._id} className="border-b border-opacity-20 dark:border-gray-300 dark:bg-gray-50">
+                                    <td className="p-3">
+                                        <p className='font-bold'>{category.name}</p>
+                                    </td>
+                                    <td className="p-3">
+                                        <p className='font-semibold'>{category.description}</p>
+                                    </td>
+                                    <td className="p-3">
+                                        <button type="button" onClick={() => handleEditCategory(category._id)} className="px-8 py-3 font-semibold rounded bg-black dark:text-gray-100 text-white">Edit</button>
+                                    </td>
+                                    <td className="p-3">
+                                        <button type="button" onClick={() => handleDeleteCategory(category._id, category.name)} className="px-8 py-3 font-semibold rounded bg-red-500 dark:text-gray-100 text-white">Delete</button>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
+                <Flex justifyContent="space-between" mt={4} alignItems="center">
+                    <Button onClick={handlePreviousPage} disabled={currentPage === 1}>
+                        Previous
+                    </Button>
+                    <Box>
+                        Page {currentPage} of {totalPages}
+                    </Box>
+                    <Button onClick={handleNextPage} disabled={currentPage === totalPages}>
+                        Next
+                    </Button>
+                </Flex>
             </div>
         </>
     )

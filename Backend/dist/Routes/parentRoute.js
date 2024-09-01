@@ -20,7 +20,7 @@ parentroute.post('/logout', parentController_1.parentLogout);
 parentroute.get('/profile/:parentId', authMiddleware_1.protectParent, parentController_1.getProfile);
 parentroute.get('/get-childcategory', categoryController_1.getAllchildCategory);
 parentroute.get('/get-allreviews', parentController_1.getAllreviews);
-parentroute.put('/edit-profile/:parentId', authMiddleware_1.protectParent, authMiddleware_1.protectParent, parentController_1.editProfile);
+parentroute.put('/edit-profile/:parentId', authMiddleware_1.protectParent, parentController_1.editProfile);
 parentroute.get('/getsittingcat', authMiddleware_1.protectParent, categoryController_1.getAllsittingCategory);
 parentroute.get('/getsitter', parentController_1.listSitter);
 parentroute.post('/webhook', express_1.default.raw({ type: 'application/json' }), bookingController_1.handleStripeWebhook);
@@ -36,7 +36,6 @@ parentroute.get('/get-messages/:chatId', authMiddleware_1.protectParent, parentC
 parentroute.post('/send-message', authMiddleware_1.protectParent, parentController_1.sendMessage);
 // parentroute.post('/mark-seen',protectParent,markSeen)
 parentroute.post('/post-review', authMiddleware_1.protectParent, parentController_1.postReview);
-parentroute.get('/check-block', authMiddleware_1.protectParent, parentController_1.isBlocked);
 parentroute.get('/get-subscriptions', parentController_1.getSubscription);
 parentroute.post('/confirm-subscription/:subscriptionId', authMiddleware_1.protectParent, bookingController_1.confirmSubscription);
 parentroute.post('/add-favourites', authMiddleware_1.protectParent, parentController_1.addFavourites);

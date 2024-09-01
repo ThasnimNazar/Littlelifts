@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import api from "../../Axiosconfig";
+import { adminApi } from "../../Axiosconfig";
 import { useToast } from "@chakra-ui/react";
 
 
@@ -31,7 +31,7 @@ const Managesubscription: React.FC = () => {
   useEffect(() => {
     const getSubscriptions = async () => {
       try {
-        const response = await api.get("/get-subscriptions");
+        const response = await adminApi.get("/get-subscriptions");
         setSubscriptions(response.data.subscriptions);
       } catch (error) {
         toast({

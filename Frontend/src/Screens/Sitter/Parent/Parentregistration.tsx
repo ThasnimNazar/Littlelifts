@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
 import { useToast } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
 import axios from 'axios';
 import { setParentCredentials } from '../../../Slices/Parentslice';
-import { useParentregisterMutation } from '../../../Slices/Parentapislice';
 import Header from "../../../Header";
-import unauthApi from '../../../Unauth';
-
+import { publicApi }  from '../../../Axiosconfig';
 
 
 interface FormErrors {
@@ -18,6 +16,21 @@ interface ChildCategory {
     _id:string;
     name: string;
     description: string;
+}
+
+interface ErrorWithData {
+    data: {
+        message: string;
+    };
+}
+
+function isErrorWithData(error: unknown): error is ErrorWithData {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'data' in error &&
+        (error as ErrorWithData).data?.message !== undefined
+    );
 }
 
 
@@ -34,7 +47,6 @@ const Parentregistration: React.FC = () => {
 
 
     const [childcategories,setChildcategory] = useState<ChildCategory[]>([])
-    const [register] = useParentregisterMutation();
 
     const toast = useToast();
     const navigate = useNavigate();
@@ -90,15 +102,22 @@ const Parentregistration: React.FC = () => {
             });
         } else {
             try {
-                const res = await register({ name, email, phoneno, password, confirmPassword, selectedchildcategory }).unwrap();
+                const res = await publicApi.post('/api/parent/register-parent',{
+                    name, email, phoneno, password, confirmPassword, selectedchildcategory 
+                })
                 console.log(res, 'xx')
-                const  response = { ...res }
-                const token = response.parentToken
-                console.log(token)
-                const role = response.role
+                const { _id, name:registerName, email:registerEmail, phoneno:registerPhoneno, selectedchildcategory:registerchildcategory } = res.data;
+                const token = res.data.token;
+                const role = res.data.role;
                 localStorage.setItem('parentToken',token)
-                localStorage.setItem('role',role)
-                dispatch(setParentCredentials({ ...res }));
+                localStorage.setItem('parentRole',role)
+                dispatch(setParentCredentials({
+                    _id,
+                    name:registerName,
+                    email:registerEmail,
+                    phoneno:registerPhoneno,
+                    selectedchildcategory:registerchildcategory,
+                }));
                     toast({
                         title: 'Success',
                         description: 'Registration successfull',
@@ -108,50 +127,41 @@ const Parentregistration: React.FC = () => {
                         position: 'top-right',
                     });
                     navigate('/parent/parentotp')
-            } catch (error: unknown) {
-                if (axios.isAxiosError(error)) {
-                    console.error(error.response?.data);
-                    toast({
-                        title: 'Error',
-                        description: error.response?.data?.message || 'An unknown error occurred',
-                        status: 'error',
-                        duration: 3000,
-                        isClosable: true,
-                        position: 'top-right',
-                    });
+            }catch (error: unknown) {
+                console.log("Full error object:", error);
+                let errorMessage = 'An unknown error occurred';
+            
+                if (isErrorWithData(error)) {
+                    errorMessage = error.data.message;
+                } else if (axios.isAxiosError(error)) {
+                    console.log("Axios error response:", error.response);
+                    if (error.response && error.response.data && error.response.data.message) {
+                        errorMessage = error.response.data.message;
+                    } else if (error.message) {
+                        errorMessage = error.message;   
+                    }
                 } else if (error instanceof Error) {
-                    console.error(error.message); // Log the error message
-                    toast({
-                        title: 'Error',
-                        description: error.message,
-                        status: 'error',
-                        duration: 3000,
-                        isClosable: true,
-                        position: 'top-right',
-                    });
-                } else {
-                    console.error('An unknown error occurred');
-                    toast({
-                        title: 'Error',
-                        description: 'An unknown error occurred',
-                        status: 'error',
-                        duration: 3000,
-                        isClosable: true,
-                        position: 'top-right',
-                    });
+                    errorMessage = error.message;
                 }
+            
+                toast({
+                    title: 'Error',
+                    description: errorMessage,
+                    status: 'error',
+                    duration: 3000,
+                    isClosable: true,
+                    position: 'top-right',
+                });
             }
+            
         }
-    };
+    }            
 
    
-
-   
-
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await unauthApi.get('/parent/get-childcategory');
+                const response = await publicApi.get('api/parent/get-childcategory');
                 console.log(response);
                 if (response.data && Array.isArray(response.data.category)) {
                     setChildcategory(response.data.category);
@@ -196,7 +206,7 @@ const Parentregistration: React.FC = () => {
                         <h3 className="text-xl font-semibold text-gray-700 text-center" style={{ fontFamily: "Agrandir, Helvetica, Arial, Lucida, sans-serif" }}>Welcome!complete your registration </h3>
                         <div className="mt-4 flex items-center justify-between">
                             <span className="border-b w-1/5 lg:w-1/4"></span>
-                            <a href="/parent/parentlogin" className="text-xs text-center text-black uppercase">or login with email</a>
+                            <Link to="/parent/parentlogin" className="text-xs text-center text-black uppercase">or login with email</Link>
                             <span className="border-b w-1/5 lg:w-1/4"></span>
                         </div>
                         <form onSubmit={submitHandler}>
@@ -244,7 +254,7 @@ const Parentregistration: React.FC = () => {
                             </div>
                             <div className="mt-4 flex items-center justify-between">
                                 <span className="border-b w-1/5 md:w-1/4"></span>
-                                <a href="/parent/parentlogin" className="text-xs text-gray-500 uppercase">or sign in</a>
+                                <Link to="/parent/parentlogin" className="text-xs text-gray-500 uppercase">or sign in</Link>
                                 <span className="border-b w-1/5 md:w-1/4"></span>
                             </div>
                         </form>

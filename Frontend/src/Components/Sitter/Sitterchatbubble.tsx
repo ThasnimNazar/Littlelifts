@@ -6,7 +6,7 @@ import { RootState } from '../../Store';
 import { format } from 'date-fns';
 import useSocket from '../Socket/Usesocket';
 import axios from 'axios'
-import api from '../../Axiosconfig'
+import { sitterApi } from '../../Axiosconfig'
 import { useToast } from '@chakra-ui/react';
 
 interface Message {
@@ -72,7 +72,7 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
         if (message.trim() || image || video || audio) {
             const newMessage: Message = {
                 _id: Date.now().toString(),
-                chatId: chatId,
+                chatId: id,
                 sender: sitterId!,
                 content: message,
                 timestamp: new Date().toISOString(),
@@ -91,7 +91,7 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
     useEffect(() => {
         const updateSeen = async () => {
             try {
-                const response = await axios.put(`/api/sitter/post-lastseen/${sitterId}?chatId=${id}`);
+                const response = await sitterApi.put(`/post-lastseen/${sitterId}?chatId=${id}`);
                 console.log(response);
             }
             catch (error) {
@@ -122,7 +122,7 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
     useEffect(() => {
         const postLastseen = async () => {
             try {
-                const response = await api.post(`/last-seen/${sitterId}`)
+                const response = await sitterApi.post(`/last-seen/${sitterId}`)
                 console.log(response)
             }
             catch (error) {
@@ -171,7 +171,7 @@ const Sitterchatbubble: React.FC<ChatBubbleProps> = ({ parent, chatId, chatMessa
     useEffect(() => {
         const getLastseen = async () => {
             try {
-                const response = await api.get('/get-lastseen', {
+                const response = await sitterApi.get('/get-lastseen', {
                     params: {
                         parentId
                     }

@@ -3,9 +3,9 @@ import { useState,useEffect } from 'react'
 import { useToast } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch,useSelector } from 'react-redux'
-import  { useAdminloginMutation} from '../../../Slices/Adminapislice'
 import { RootState } from "../../../Store";
 import { setCredentials } from "../../../Slices/Adminslice";
+import { publicApi } from "../../../Axiosconfig";
 
 
 interface FormErrors {
@@ -20,7 +20,6 @@ const Adminloginscreen : React.FC = () =>{
     const navigate = useNavigate();
     const dispatch = useDispatch()
 
-    const [login] = useAdminloginMutation();
     const { adminInfo } = useSelector((state: RootState) => state.adminAuth);
 
     const submitHandler = async(event:React.FormEvent<HTMLFormElement>)=>{
@@ -52,17 +51,18 @@ const Adminloginscreen : React.FC = () =>{
         });
       } else {
     try{
-
-        const response  = await login({email,password}).unwrap();
+        const response  = await publicApi.post('/api/admin/login',
+          {email,password}   
+        )
         console.log(response,'login')
-        const token = response.token
-        const role = response.role;
+        const token = response.data.token
+        const role = response.data.role;
         localStorage.setItem('adminToken',token)
-        localStorage.setItem('role',role)
-        dispatch(setCredentials({...response.admin}))
+        localStorage.setItem('adminRole',role)
+        dispatch(setCredentials({...response.data.admin}))
         toast({
             title: "Success",
-            description: response.message,
+            description: response.data.message,
             status: 'success',
             duration: 3000,
             isClosable: true,

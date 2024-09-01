@@ -6,9 +6,9 @@ import Footer from './Footer';
 import { RootState } from './Store';
 import Sittingcards from './Sittingcards';
 import Feature from './Feature';
-import unauthApi from './Unauth';
 import Reviews from './ReviewCards';
 import { useToast } from '@chakra-ui/react';
+import { publicApi } from './Axiosconfig';
 
 
 interface Location {
@@ -36,7 +36,7 @@ const Landscreen = () => {
   useEffect(() => {
     const fetchBabysitters = async (latitude: number, longitude: number) => {
       try {
-        const response = await unauthApi.get(`/parent/getsitter`, {
+        const response = await publicApi.get(`/api/parent/getsitter`, {
           params: {
             lat: latitude,
             lng: longitude,

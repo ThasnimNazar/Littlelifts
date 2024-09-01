@@ -8,7 +8,7 @@ import axios from 'axios';
 import Header from '../../Header';
 import Resendotp from '../../Components/Parent/Resendotp';
 import { RootState } from '../../Store';
-import api from '../../Axiosconfig';
+import { publicApi } from '../../Axiosconfig';
 
 
 
@@ -47,7 +47,7 @@ const Sitterforgetotp : React.FC = () =>{
             status: 'info',
             isClosable: true,
           })
-         await api.post('/resendotp')
+         await publicApi.post('/resendotp')
          toast({
           title: 'resend otp successfully',
           status: 'success',
@@ -80,7 +80,7 @@ const Sitterforgetotp : React.FC = () =>{
     
       const submitHandler = async () => {
         try {
-          const response = await api.post('/verify-passwordotp', {
+          const response = await publicApi.post('/api/sitter/verify-passwordotp', {
             otp,
             sitterId
           });    

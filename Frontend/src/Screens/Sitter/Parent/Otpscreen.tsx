@@ -8,7 +8,7 @@ import 'tailwindcss/tailwind.css';
 import axios from 'axios';
 import Header from '../../../Header';
 import Resendotp from '../../../Components/Parent/Resendotp';
-import api from '../../../Axiosconfig'
+import { parentApi } from '../../../Axiosconfig'
 
 
 const OtpComponent: React.FC = () => {
@@ -43,7 +43,7 @@ const OtpComponent: React.FC = () => {
         status: 'info',
         isClosable: true,
       })
-     await api.post('/resendotp')
+     await parentApi.post('/resendotp')
      toast({
       title: 'resend otp successfully',
       status: 'success',
@@ -76,7 +76,7 @@ const OtpComponent: React.FC = () => {
 
   const submitHandler = async () => {
     try {
-      const response = await api.post('/verifyotp', {
+      const response = await parentApi.post('/verifyotp', {
         otp,
         parentId: parentInfo?._id,
       });

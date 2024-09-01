@@ -41,8 +41,11 @@ const protectParent = asyncHandler(async (req: AuthenticatedRequest, res: Respon
             console.log(user,'pp')
 
             if (user) {
+                console.log(user,'user')
                 req.parent = user;
+                console.log(req.parent,'prentt')
                 next();
+                console.log('next() called')
             } else {
                 res.status(401).json({ message: 'User not found' });
             }

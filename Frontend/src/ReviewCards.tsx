@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@chakra-ui/react';
-import unauthApi from './Unauth';
+import { publicApi } from './Axiosconfig';
 
 interface Parent{
     name:string,
@@ -21,7 +21,7 @@ const Reviews = () => {
   useEffect(() => {
     const getAllreviews = async () => {
       try {
-        const response = await unauthApi.get('/parent/get-allreviews');
+        const response = await publicApi.get('/api/parent/get-allreviews');
         setReviews(response.data.reviews || []);
       } catch (error) {
         toast({

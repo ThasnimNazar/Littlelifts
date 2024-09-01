@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSeen = exports.getAllreviews = exports.getLastmessage = exports.lastSeen = exports.updateLastseen = exports.getReviews = exports.getUser = exports.removeFavourites = exports.getFavourites = exports.addFavourites = exports.getSubscription = exports.isBlocked = exports.postReview = exports.markSeen = exports.getMessages = exports.sendMessage = exports.createChat = exports.bookingsParent = exports.getSlots = exports.getName = exports.getAvailabledates = exports.filterBabysittersByDate = exports.searchBabysitters = exports.resendOtp = exports.resetparentPassword = exports.parentpasswordOtp = exports.forgotPassword = exports.verifyOtp = exports.parentLogout = exports.editProfile = exports.getProfile = exports.listSitter = exports.parentLogin = exports.registerParent = void 0;
+exports.updateSeen = exports.getAllreviews = exports.getLastmessage = exports.lastSeen = exports.updateLastseen = exports.getReviews = exports.getUser = exports.removeFavourites = exports.getFavourites = exports.addFavourites = exports.getSubscription = exports.postReview = exports.markSeen = exports.getMessages = exports.sendMessage = exports.createChat = exports.bookingsParent = exports.getSlots = exports.getName = exports.getAvailabledates = exports.filterBabysittersByDate = exports.searchBabysitters = exports.resendOtp = exports.resetparentPassword = exports.parentpasswordOtp = exports.forgotPassword = exports.verifyOtp = exports.parentLogout = exports.editProfile = exports.getProfile = exports.listSitter = exports.parentLogin = exports.registerParent = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -47,7 +47,7 @@ const registerParent = (0, express_async_handler_1.default)((req, res) => __awai
         }
         const parentExist = yield parentModel_1.default.findOne({ email });
         if (parentExist) {
-            res.status(400).json({ message: 'Parent already exists with the email' });
+            res.status(402).json({ message: 'Parent already exists with this email' });
             return;
         }
         const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
@@ -72,7 +72,7 @@ const registerParent = (0, express_async_handler_1.default)((req, res) => __awai
             email,
             phoneno: phoneno,
             selectedchildcategory,
-            parentToken: token,
+            token,
             role
         });
     }
@@ -195,7 +195,7 @@ const parentLogin = (0, express_async_handler_1.default)((req, res) => __awaiter
             return;
         }
         if (parentExists.blocked) {
-            res.status(401).json({ message: 'your account is blocked' });
+            res.status(403).json({ message: 'Your account is blocked' });
             return;
         }
         const passwordMatch = yield bcryptjs_1.default.compare(password, parentExists.password);
@@ -204,7 +204,7 @@ const parentLogin = (0, express_async_handler_1.default)((req, res) => __awaiter
             return;
         }
         const token = (0, generateParentToken_1.default)(res, parentExists._id);
-        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully', parentToken: token, role: parentExists === null || parentExists === void 0 ? void 0 : parentExists.role });
+        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully', parentToken: token, });
     }
     catch (error) {
         if (error instanceof Error) {
@@ -216,12 +216,9 @@ const parentLogin = (0, express_async_handler_1.default)((req, res) => __awaiter
     }
 }));
 exports.parentLogin = parentLogin;
-const listSitter = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const listSitter = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log('Received request for listing sitters');
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const skip = (page - 1) * limit;
         const lat = req.query.lat;
         const lng = req.query.lng;
         const radius = req.query.radius;
@@ -255,25 +252,28 @@ const listSitter = (0, express_async_handler_1.default)((req, res) => __awaiter(
         console.log('Query:', JSON.stringify(query));
         const babysitters = yield sitterModel_1.default.find(query);
         console.log('Babysitters found:', babysitters);
-        const total = yield sitterModel_1.default.countDocuments(query);
-        console.log('Total sitters found:', total);
-        res.status(200).json({ sitters: babysitters, total });
+        res.status(200).json({ sitters: babysitters });
     }
     catch (error) {
-        console.error('Error while listing sitters:', error);
-        res.status(500).json({ message: 'An unknown error occurred' });
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+        }
+        else {
+            res.status(500).json({ message: 'An unknown error occurred' });
+        }
     }
-}));
+});
 exports.listSitter = listSitter;
 const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { parentId } = req.params;
         const parent = yield parentModel_1.default.findById({ _id: parentId });
-        if (parent) {
-            res.status(200).json({ parent });
+        if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
         }
         else {
-            res.status(404).json({ message: 'failed to fetch parent details' });
+            res.status(200).json({ parent });
         }
     }
     catch (error) {
@@ -290,6 +290,11 @@ const editProfile = (0, express_async_handler_1.default)((req, res) => __awaiter
     try {
         yield uploadSinglePromise(req, res);
         const { parentId } = req.params;
+        const parentBlock = yield parentModel_1.default.findById({ _id: parentId });
+        if ((parentBlock === null || parentBlock === void 0 ? void 0 : parentBlock.blocked) === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         const { name, phoneno } = req.body;
         const profileImageUrl = req.file.location;
         const updatedData = {};
@@ -344,6 +349,10 @@ const forgotPassword = (0, express_async_handler_1.default)((req, res) => __awai
         const email = req.body.email;
         console.log(email, 'eeee');
         const parent = yield parentModel_1.default.findOne({ email });
+        if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+            return;
+        }
         if (!parent) {
             res.status(401).json({ message: 'User not found, User authentication failed, Please SignUp again' });
             return;
@@ -370,6 +379,11 @@ const parentpasswordOtp = (0, express_async_handler_1.default)((req, res) => __a
             return;
         }
         const parentId = req.parent._id;
+        const parentBlock = yield parentModel_1.default.findById({ _id: parentId });
+        if ((parentBlock === null || parentBlock === void 0 ? void 0 : parentBlock.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+            return;
+        }
         console.log(parentId);
         if (!otp) {
             res.status(400).json({ message: 'Empty passwords are not allowed' });
@@ -434,6 +448,10 @@ const resetparentPassword = (0, express_async_handler_1.default)((req, res) => _
         const parent = yield parentModel_1.default.findById(parentId);
         if (!parent) {
             res.status(404).json({ message: 'Parent not found' });
+            return;
+        }
+        if (parent.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
             return;
         }
         if (newPassword) {
@@ -628,6 +646,11 @@ exports.getSlots = getSlots;
 const bookingsParent = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { parentId } = req.params;
+        const parent = yield parentModel_1.default.findById({ _id: parentId });
+        if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
         const skip = (page - 1) * limit;
@@ -664,6 +687,10 @@ exports.bookingsParent = bookingsParent;
 const createChat = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { parentId, sitterId } = req.body;
+        const parent = yield parentModel_1.default.findById({ _id: parentId });
+        if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+        }
         let chat = yield chatModel_1.default.findOne({
             participants: { $all: [parentId, sitterId] }
         });
@@ -700,6 +727,12 @@ const sendMessage = (0, express_async_handler_1.default)((req, res) => __awaiter
                 }
             });
         });
+        if (req.parent) {
+            const parent = yield parentModel_1.default.findById({ _id: req.parent._id });
+            if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+                res.status(403).json({ message: "Your account is blocked" });
+            }
+        }
         const { chatId, senderId, content, timestamp } = req.body;
         console.log(req.body, 'jj');
         const imageUrl = req.files && req.files.image ? req.files.image[0].location : '';
@@ -829,31 +862,6 @@ const postReview = (0, express_async_handler_1.default)((req, res) => __awaiter(
     }
 }));
 exports.postReview = postReview;
-const isBlocked = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { parentId } = req.query;
-        const parent = yield parentModel_1.default.findById({ _id: parentId });
-        if (!parent) {
-            res.status(404).json({ message: 'parent not found' });
-            return;
-        }
-        if (parent.blocked) {
-            res.status(200).json({ parent, message: 'You are blocked' });
-            return;
-        }
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error(error.message);
-            res.status(500).json({ message: error.message });
-        }
-        else {
-            console.error('An unknown error occurred');
-            res.status(500).json({ message: 'An unknown error occurred' });
-        }
-    }
-}));
-exports.isBlocked = isBlocked;
 const getSubscription = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const subscription = yield subscriptionModel_1.default.find({});
@@ -886,6 +894,10 @@ const addFavourites = (0, express_async_handler_1.default)((req, res) => __await
         const parent = yield parentModel_1.default.findById(parentId);
         if (!parent) {
             res.status(404).json({ message: 'Parent not found' });
+            return;
+        }
+        if (parent.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
             return;
         }
         const favourites = yield favouritesModel_1.default.findOne({ parent: parentId });
@@ -924,6 +936,11 @@ exports.addFavourites = addFavourites;
 const getFavourites = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { parentId } = req.params;
+        const parent = yield parentModel_1.default.findById({ _id: parentId });
+        if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         const favourites = yield favouritesModel_1.default.findOne({ parent: parentId }).populate({ path: 'sitters', select: 'name email phoneno profileImage' })
             .set('strictPopulate', false);
         console.log(favourites, 'favs');
@@ -950,6 +967,10 @@ const removeFavourites = (0, express_async_handler_1.default)((req, res) => __aw
     try {
         const { sitterId } = req.body;
         const { parentId } = req.params;
+        const parent = yield parentModel_1.default.findById(parentId);
+        if ((parent === null || parent === void 0 ? void 0 : parent.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+        }
         const id = new mongoose_1.default.Types.ObjectId(parentId);
         const favourites = yield favouritesModel_1.default.findOne({ parent: parentId });
         console.log(favourites, 'll');

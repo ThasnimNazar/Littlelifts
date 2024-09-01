@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { VStack, Button, Text, useToast } from "@chakra-ui/react";
 import Header from '../../Header';
 import { useNavigate } from 'react-router-dom';
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 const MAX_IMAGES = 2;
@@ -93,7 +93,7 @@ const DocumentVerification: React.FC = () => {
     if (sitterInfoString) {
       const sitterInfo = JSON.parse(sitterInfoString);
       try {
-        const response = await api.put(`/upload-doc/${sitterInfo._id}`, formData, {
+        const response = await sitterApi.put(`/upload-doc/${sitterInfo._id}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

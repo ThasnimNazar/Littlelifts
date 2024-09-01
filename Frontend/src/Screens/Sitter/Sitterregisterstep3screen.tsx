@@ -2,7 +2,7 @@ import Header from "../../Header";
 import { useEffect, useState } from "react";
 import { useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 interface Sittingcategory {
@@ -28,7 +28,7 @@ const Sitterregisterstep3screen: React.FC = () => {
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await api.get('/get-sittingcategory');
+                const response = await sitterApi.get('/get-sittingcategory');
                 console.log(response);
                 if (response.data && Array.isArray(response.data.category)) {
                     setSittingcategory(response.data.category);
@@ -70,7 +70,7 @@ const Sitterregisterstep3screen: React.FC = () => {
                 setSitterId(sitterInfo._id);
 
                 try {
-                    const response = await api.put(`/save-sittingoption/${sitterInfo._id}`, {
+                    const response = await sitterApi.put(`/save-sittingoption/${sitterInfo._id}`, {
                         selectedOption: selectedCategory.name,
                         selectedOptionId: selectedCategory._id
                     });

@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Parentlayout from '../../../Components/Parent/Parentlayout';
 import { RootState } from '../../../Store'
-import api from '../../../Axiosconfig'
+import { parentApi } from '../../../Axiosconfig'
 
 
 interface Booking {
@@ -41,7 +41,7 @@ const Parentbookings = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rating, setRating] = useState<number>(0);
   const [review, setReview] = useState<string>('');
-  const itemsPerPage = 10;
+  const itemsPerPage = 4;
 
   const openModal = (booking: Booking) => {
     console.log(booking, 'book')
@@ -69,7 +69,7 @@ const Parentbookings = () => {
   useEffect(() => {
     const fetchParentBookings = async () => {
       try {
-        const response = await api.get(`/bookings/${parentId}`, {
+        const response = await parentApi.get(`/bookings/${parentId}`, {
           params: {
             page: currentPage,
             limit: itemsPerPage,
@@ -123,7 +123,7 @@ const Parentbookings = () => {
   const handleReviewSubmit = async () => {
     try {
       if (selectedBooking) {
-        const response = await api.post('/post-review', {
+        const response = await parentApi.post('/post-review', {
           rating: rating,
           review: review,
           bookingId: selectedBooking._id

@@ -1,52 +1,63 @@
-import axios from 'axios';
+import axios,{ AxiosInstance } from 'axios';
 
-const api = axios.create();
+const publicApi = axios.create({
+  baseURL: 'http://localhost:5003',
+  withCredentials: true,
+});
 
-api.interceptors.request.use(
-  (config) => {
-    const role = localStorage.getItem('role'); 
-    let token: string | null = '';
+const adminApi = axios.create({
+  baseURL: 'http://localhost:5003/api/admin',
+  withCredentials: true,
+});
 
-    if (role === 'admin') {
-      config.baseURL = '/api/admin';
-      token = localStorage.getItem('adminToken');
-    } else if (role === 'parent') {
-      config.baseURL = '/api/parent';
-      token = localStorage.getItem('parentToken');
-    } else if (role === 'sitter') {
-      config.baseURL = '/api/sitter';
-      token = localStorage.getItem('sitterToken');
+const parentApi = axios.create({
+  baseURL: 'http://localhost:5003/api/parent',
+  withCredentials: true,
+});
+
+const sitterApi = axios.create({
+  baseURL: 'http://localhost:5003/api/sitter',
+  withCredentials: true,
+});
+
+
+
+const attachResponseInterceptor = (apiInstance: AxiosInstance, loginRoute: string) => {
+  apiInstance.interceptors.response.use(
+    (response) => response,
+    (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response) {
+          const { status, data } = response;
+          if (status === 401) {
+            console.error('Unauthorized request - redirecting to login');
+            window.location.href = loginRoute;
+          } else if (status === 403) {
+            if (data.message === 'Your account is blocked') {
+              alert(data.message); 
+              window.location.href = loginRoute; 
+            } else {
+              console.error('Forbidden request - access denied');
+            }
+          } else {
+            console.error(`Received status code ${status}`);
+          }
+        } else {
+          console.error('Network error or no response from server');
+        }
+      } else if (error instanceof Error) {
+        console.error('Error message:', error.message);
+      } else {
+        console.error('Unexpected error:', error);
+      }
+      return Promise.reject(error);
     }
+  );
+};
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+attachResponseInterceptor(adminApi, '/admin/login');
+attachResponseInterceptor(parentApi, '/parent/parentlogin');
+attachResponseInterceptor(sitterApi, '/sitter/sitterlogin');
 
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// api.interceptors.response.use(
-//   (response) => {
-//     return response;
-//   },
-//   (error) => {
-//     if (error.response) {
-//       const { status } = error.response;
-//       if (status === 401) {
-//         console.error('Unauthorized request - redirecting to login');
-//         window.location.href = '/login';
-//       } else if (status === 403) {
-//         console.error('Forbidden request - access denied');
-//       }
-//     } else {
-//       console.error('Network error or other issue');
-//     }
-//     return Promise.reject(error);
-//   }
-// );
-
-export default api;
+export { publicApi, adminApi, parentApi, sitterApi };

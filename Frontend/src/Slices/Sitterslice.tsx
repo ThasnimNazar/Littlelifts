@@ -24,16 +24,13 @@ interface SitterInfo {
 
 interface SitterAuthState {
   sitterInfo: SitterInfo | null;
-  userType: string | null;
  
 }
 
 const initialState: SitterAuthState = {
   sitterInfo: localStorage.getItem('sitterInfo')
     ? JSON.parse(localStorage.getItem('sitterInfo')!)
-    : null,
-  userType: localStorage.getItem('userType') || null,
- 
+    : null, 
 };
 
 const sitterAuthSlice = createSlice({
@@ -44,14 +41,10 @@ const sitterAuthSlice = createSlice({
       console.log('setSitterCredentials action payload:');
       state.sitterInfo = action.payload;
       console.log(state.sitterInfo,'sitter')
-      state.userType = 'sitter';
-      localStorage.setItem('userType', 'sitter');
       localStorage.setItem('sitterInfo', JSON.stringify(action.payload));
     },
     sitterLogout(state) {
       state.sitterInfo = null;
-      state.userType = null;
-      localStorage.removeItem('userType');
       localStorage.removeItem('sitterInfo');
     },
   },

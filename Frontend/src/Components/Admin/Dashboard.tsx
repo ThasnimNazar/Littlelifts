@@ -4,7 +4,7 @@ import Bookingtable from './Bookingtable';
 import Chart from './Chart';
 import '../../Css/Admin/Dashboard.css'
 import '../../Css/Admin/Body.css'
-import api from '../../Axiosconfig';
+import { adminApi } from '../../Axiosconfig';
 
 
 interface Booking {
@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const fetchBookings = async () => {
             try {
-                const response = await api.get('/get-bookings')
+                const response = await adminApi.get('/get-bookings')
                 console.log(response)
                 setBookings(response.data.bookings)
             }

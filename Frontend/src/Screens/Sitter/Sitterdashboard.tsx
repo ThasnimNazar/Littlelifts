@@ -6,7 +6,7 @@ import { setSitterCredentials } from "../../Slices/Sitterslice";
 import { RootState } from "../../Store";
 import Rejectionmodal from "../../Components/Sitter/Rejectionmodal";
 import Sitterheader from '../../Layouts/Adminlayouts/Sitter/Sitterheader'
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 interface Reviews {
@@ -21,21 +21,21 @@ interface Reviews {
   createdAt: string;
 }
 
-interface Bookings{
-  _id:string;
-  parent:{
-    name:string;
-    email:string;
-    profileImage:string;
+interface Bookings {
+  _id: string;
+  parent: {
+    name: string;
+    email: string;
+    profileImage: string;
 
   }
-  selectedDate:Date;
-  timeSlot:{
-    startTime:Date;
-    endTime:Date
+  selectedDate: Date;
+  timeSlot: {
+    startTime: Date;
+    endTime: Date
   }
-  status:string;
-  isPaid:boolean;
+  status: string;
+  isPaid: boolean;
 }
 
 const SitterDashboard: React.FC = () => {
@@ -43,9 +43,9 @@ const SitterDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const toast = useToast();
   const dispatch = useDispatch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 4;
   const [reviews, setReviews] = useState<Reviews[]>([])
 
   const [openModal, setOpenModal] = useState<boolean>(false);
@@ -58,7 +58,7 @@ const SitterDashboard: React.FC = () => {
 
   const handleApprove = async (bookingId: string) => {
     try {
-      await api.post(`/approve-booking/${bookingId}`);
+      await sitterApi.post(`/approve-booking/${bookingId}`);
       toast({
         title: 'Booking approved',
         status: 'success',
@@ -87,7 +87,7 @@ const SitterDashboard: React.FC = () => {
   const submitRejectionReason = async (reason: string) => {
     try {
       if (selectedBookingId) {
-        await api.post(`/reject-booking/${selectedBookingId}`, { reason });
+        await sitterApi.post(`/reject-booking/${selectedBookingId}`, { reason });
         toast({
           title: 'Booking rejected',
           status: 'success',
@@ -117,7 +117,7 @@ const SitterDashboard: React.FC = () => {
         const sitterInfoString = localStorage.getItem('sitterInfo');
         if (sitterInfoString) {
           const sitterInfo = JSON.parse(sitterInfoString);
-          const response = await api.get(`/getstatus/${sitterInfo._id}`);
+          const response = await sitterApi.get(`/getstatus/${sitterInfo._id}`);
           dispatch(setSitterCredentials({ ...response.data.sitter }));
           setStatus(response.data.sitter.verified);
           setLoading(false);
@@ -141,14 +141,14 @@ const SitterDashboard: React.FC = () => {
     const fetchBookings = async () => {
       if (sitterId) {
         try {
-          const response = await api.get(`/bookings/${sitterId}`, {
+          const response = await sitterApi.get(`/bookings/${sitterId}`, {
             params: {
               page: currentPage,
               limit: itemsPerPage,
             },
           });
           setBookings(response.data.bookings);
-          setTotalPages(Math.ceil(response.data.totalBookings / itemsPerPage));
+          setTotalPages(response.data.totalPages);
         } catch (error) {
           if (axios.isAxiosError(error) && error.response) {
             toast({
@@ -175,7 +175,7 @@ const SitterDashboard: React.FC = () => {
     fetchBookings();
   }, [sitterId, currentPage, itemsPerPage, toast]);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = (newPage:number) => {
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
     }
@@ -184,7 +184,7 @@ const SitterDashboard: React.FC = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await api.get(`/get-reviews/${sitterId}`)
+        const response = await sitterApi.get(`/get-reviews/${sitterId}`)
         console.log(response)
         setReviews(response.data.review)
       }
@@ -343,15 +343,29 @@ const SitterDashboard: React.FC = () => {
                       </tbody>
 
                     </table>
-                    <div className="mt-4 flex justify-center">
-                      <button className="btn btn-outline mx-1" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
-                        Previous
+                    <div className="flex justify-center mt-4">
+                      <button
+                        title="previous"
+                        type="button"
+                        className="inline-flex items-center justify-center w-8 h-8 py-0 border rounded-md shadow"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="w-4">
+                          <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
                       </button>
-                      <span className="mx-2">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button className="btn btn-outline mx-1" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
-                        Next
+                      <span className="mx-2">Page {currentPage} of {totalPages}</span>
+                      <button
+                        title="next"
+                        type="button"
+                        className="inline-flex items-center justify-center w-8 h-8 py-0 border rounded-md shadow"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                      >
+                        <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="w-4">
+                          <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -359,7 +373,7 @@ const SitterDashboard: React.FC = () => {
                     <div className="card-body">
                       <h2 className="card-title text-sky-700 font-medium font-serif">Recent Ratings & Reviews</h2>
                       <div className="mt-4">
-                        { reviews.length > 0 ? (
+                        {reviews.length > 0 ? (
                           reviews.map(review => (
                             <div key={review._id} className="review-item">
                               <div className="flex items-center mb-2">

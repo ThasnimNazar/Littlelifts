@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@chakra-ui/react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { RootState } from './Store';
 import './Css/Admin/notification.css'
 import Notificationtab from './Components/Parent/Notificationtab';
-
-
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-import api from "./Axiosconfig";
+import { parentApi } from "./Axiosconfig";
 import useSocket from './Components/Socket/Usesocket';
+import axios from 'axios'
 
 
 interface CustomNotification {
@@ -90,7 +90,7 @@ const Header: React.FC = () => {
       if (!parentInfo?._id) return;
 
       try {
-        const response = await api.get(`/profile/${parentInfo?._id}`);
+        const response = await parentApi.get(`/profile/${parentInfo?._id}`);
         setProfileimageurl(response.data.parent.profileImage);
       } catch (error) {
         toast({
@@ -125,23 +125,46 @@ const Header: React.FC = () => {
     const getUser = async () => {
       if (parentInfo) {
         try {
-          const response = await api.get(`/get-user/${parentId}`)
+          const response = await parentApi.get(`/get-user/${parentId}`)
           console.log(response.data.userSubscription, 'sub')
           if (response.data.userSubscription.isPaid === true) {
             console.log('true')
             setPaiduser(true)
           }
         }
-        catch (error) {
-          toast({
-            title: 'Error',
-            description: error instanceof Error ? error.message : 'An unknown error occurred',
-            status: 'error',
-            duration: 3000,
-            isClosable: true,
-            position: 'top-right',
-          });
-        }
+        catch (error: unknown) {
+          if (axios.isAxiosError(error)) {
+              console.error(error.response?.data);
+              toast({
+                  title: 'Error',
+                  description: error.response?.data?.message || 'An unknown error occurred',
+                  status: 'error',
+                  duration: 3000,
+                  isClosable: true,
+                  position: 'top-right',
+              });
+          } else if (error instanceof Error) {
+              console.error(error.message);
+              toast({
+                  title: 'Error',
+                  description: error.message,
+                  status: 'error',
+                  duration: 3000,
+                  isClosable: true,
+                  position: 'top-right',
+              });
+          } else {
+              console.error('An unknown error occurred');
+              toast({
+                  title: 'Error',
+                  description: 'An unknown error occurred',
+                  status: 'error',
+                  duration: 3000,
+                  isClosable: true,
+                  position: 'top-right',
+              });
+          }
+      }
       }
     }
     getUser()
@@ -158,36 +181,36 @@ const Header: React.FC = () => {
                   <nav aria-label="Global">
                     <ul className="flex items-center gap-6 text-sm">
                       <li key="home">
-                        <a
+                        <NavLink
                           className="transition font-mono font-semibold text-lg text-white hover:underline"
-                          href="/"
+                          to="/"
                         >
                           Home
-                        </a>
+                        </NavLink>
                       </li>
                       <li key="about">
-                        <a
+                        <NavLink
                           className="transition font-mono font-semibold text-lg text-white hover:underline"
-                          href="#"
+                          to="#"
                         >
                           About
-                        </a>
+                        </NavLink>
                       </li>
                       <li key="babysitters">
-                        <a
+                        <NavLink
                           className="transition font-mono font-semibold text-lg text-white hover:underline"
-                          href="/parent/babysitters"
+                          to="/parent/babysitters"
                         >
                           Babysitters
-                        </a>
+                        </NavLink>
                       </li>
                       <li key="contact">
-                        <a
+                        <NavLink
                           className="transition font-mono font-semibold text-lg text-white hover:underline"
-                          href="#"
+                          to="/contact"
                         >
                           Contact
-                        </a>
+                        </NavLink>
                       </li>
                     </ul>
                   </nav>
@@ -237,12 +260,12 @@ const Header: React.FC = () => {
                         <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
                           <ul>
                             <li key="viewProfile">
-                              <a
-                                href="/parent/viewprofile"
+                              <NavLink
+                                to="/parent/viewprofile"
                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               >
                                 View Profile
-                              </a>
+                              </NavLink>
                             </li>
                           </ul>
                         </div>

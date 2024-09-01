@@ -27,8 +27,11 @@ const protectParent = (0, express_async_handler_1.default)((req, res, next) => _
             const user = yield parentModel_1.default.findById(decoded.id).select('-password');
             console.log(user, 'pp');
             if (user) {
+                console.log(user, 'user');
                 req.parent = user;
+                console.log(req.parent, 'prentt');
                 next();
+                console.log('next() called');
             }
             else {
                 res.status(401).json({ message: 'User not found' });

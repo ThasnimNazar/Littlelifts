@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../Store';
 import { useToast } from '@chakra-ui/react';
-import api from '../../../Axiosconfig';
+import { parentApi } from '../../../Axiosconfig';
 import { useNavigate } from "react-router-dom";
 
 
@@ -28,7 +28,7 @@ const Favourites: React.FC = () => {
     useEffect(() => {
         const fetchFavourites = async () => {
             try {
-                const response = await api.get(`/get-favourites/${parentId}`);
+                const response = await parentApi.get(`/get-favourites/${parentId}`);
                 console.log(response);
                 setFavourites(response.data.favourites.sitters);
             } catch (error) {
@@ -47,7 +47,7 @@ const Favourites: React.FC = () => {
 
     const removeHandler = async(sitterId:string) =>{
         try{
-         const response = await api.put(`/remove-favourites/${parentId}`,{
+         const response = await parentApi.put(`/remove-favourites/${parentId}`,{
             sitterId
          })
          console.log(response)

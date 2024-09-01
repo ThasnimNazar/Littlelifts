@@ -1,10 +1,8 @@
-import { useState,useEffect } from 'react'
+import { useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
 import axios from 'axios'
-import { RootState } from '../../Store'
-import api from '../../Axiosconfig';
+import { publicApi } from '../../Axiosconfig';
 
 
 interface FormErrors {
@@ -16,7 +14,6 @@ const Sitterresetpassword : React.FC = () =>{
     const [ confirmPassword,setConfirmpassword ] = useState<string>('')
     const toast = useToast();
     const navigate = useNavigate();
-    const { parentInfo } = useSelector((state:RootState)=>state.parentAuth)
 
     const submitHandler = async(e:React.FormEvent<HTMLFormElement>)=>{
         e.preventDefault()
@@ -43,7 +40,7 @@ const Sitterresetpassword : React.FC = () =>{
             } else
             {
         try{
-          const response = await api.post('/reset-password',{
+          const response = await publicApi.post('/api/sitter/reset-password',{
             password,confirmPassword
           })
           if(response.status === 200){
@@ -82,11 +79,7 @@ const Sitterresetpassword : React.FC = () =>{
     }
 }
 
-    useEffect(()=>{
-        if(parentInfo){
-            navigate('/')
-        }
-    })
+  
     return(
         <>
          <div className="py-10" style={{ marginBottom: '10px' }}>

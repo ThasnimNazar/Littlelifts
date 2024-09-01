@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Types } from 'mongoose';
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 import Header from '../../Header';
@@ -41,7 +41,7 @@ const Sitterregisterstep2screen: React.FC = () => {
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await api.get('/get-childcategory')
+                const response = await sitterApi.get('/get-childcategory')
                 console.log(response, 'child')
                 if (response.data.category) {
                     setChildcategory(response.data.category)
@@ -146,7 +146,7 @@ const Sitterregisterstep2screen: React.FC = () => {
                     const sitterInfo = JSON.parse(sitterInfoString);
                     setSitterId(sitterInfo._id);
 
-                    const response = await api.put<Response>(`/register-step2/${sitterInfo._id}`, {
+                    const response = await sitterApi.put<Response>(`/register-step2/${sitterInfo._id}`, {
                         yearofexperience,
                         workwithpet,
                         maxchildren,

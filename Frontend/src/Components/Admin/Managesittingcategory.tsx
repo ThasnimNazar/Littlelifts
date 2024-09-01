@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useToast } from '@chakra-ui/react'
+import { useToast,Flex,Button,Box  } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
-import api from '../../Axiosconfig';
+import { adminApi } from '../../Axiosconfig';
 
 interface CategoryData {
     _id: string;
@@ -16,6 +16,8 @@ interface ResponseData {
 const Managesittingcategory: React.FC = () => {
     const navigate = useNavigate();
     const [categories, setCategories] = useState<CategoryData[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(4);
     const toast = useToast()
 
     const handleAddCategory = () => {
@@ -25,7 +27,7 @@ const Managesittingcategory: React.FC = () => {
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                const response = await api.get<ResponseData>('/get-sittingcategory');
+                const response = await adminApi.get<ResponseData>('/get-sittingcategory');
                 console.log(response.data); 
                 if (response.data) {
                     setCategories(response.data.category);
@@ -62,7 +64,7 @@ const Managesittingcategory: React.FC = () => {
                     <button
                         onClick={async () => {
                             try {
-                                await api.delete(`/delete-sittingcategory/${categoryId}`);
+                                await adminApi.delete(`/delete-sittingcategory/${categoryId}`);
                                 setCategories(prevCategories => prevCategories.filter(category => category._id !== categoryId));
                                 toast({
                                     title: 'Delete Successful',
@@ -99,6 +101,24 @@ const Managesittingcategory: React.FC = () => {
         });
     };
 
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = categories.slice(indexOfFirstItem, indexOfLastItem);
+
+    const totalPages = Math.ceil(categories.length / itemsPerPage);
+
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    }
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    }
+
 
     return (
         <>
@@ -125,7 +145,7 @@ const Managesittingcategory: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                        {categories.map((category) => (
+                        {currentItems.map((category) => (
                             <tr key={category._id} className="border-b border-opacity-20 dark:border-gray-300 dark:bg-gray-50">
                                 <td className="p-3">
                                     <p className='font-bold'>{category.name}</p>
@@ -144,6 +164,17 @@ const Managesittingcategory: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Flex justifyContent="space-between" mt={4} alignItems="center">
+                    <Button onClick={handlePreviousPage} disabled={currentPage === 1}>
+                        Previous
+                    </Button>
+                    <Box>
+                        Page {currentPage} of {totalPages}
+                    </Box>
+                    <Button onClick={handleNextPage} disabled={currentPage === totalPages}>
+                        Next
+                    </Button>
+                </Flex>
             </div>
         </>
     )

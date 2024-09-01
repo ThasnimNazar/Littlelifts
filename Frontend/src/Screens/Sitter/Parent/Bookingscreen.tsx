@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
-import api from '../../../Axiosconfig'
+import { parentApi } from '../../../Axiosconfig'
 
 interface TimeSlot {
     startTime: Date;
@@ -79,7 +79,7 @@ const Bookingscreen: React.FC = () => {
             const ids = selectedBabysitter.childcategory.map(category => category);
             const fetchCategories = async () => {
                 try {
-                    const categoryResponse = await api.post('/getnames', {
+                    const categoryResponse = await parentApi.post('/getnames', {
                         ids: ids
                     })
                     console.log(categoryResponse, 'ggg')
@@ -102,7 +102,7 @@ const Bookingscreen: React.FC = () => {
             if (!sitterId) return;
 
             try {
-                const response = await api.get<ApiResponse>(`/get-slots/${sitterId}`);
+                const response = await parentApi.get<ApiResponse>(`/get-slots/${sitterId}`);
                 console.log(response, 'rr')
                 const slotData = response.data.slots[0].availableDates;
 
@@ -180,7 +180,7 @@ const Bookingscreen: React.FC = () => {
         console.log(localEndTime, 'end')
 
         try {
-            const response = await api.post(`/checkout-session/${sitterId}`, {
+            const response = await parentApi.post(`/checkout-session/${sitterId}`, {
                 selectedDate,
                 startTime: localStartTime,
                 endTime: localEndTime,

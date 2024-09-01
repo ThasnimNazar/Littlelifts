@@ -4,7 +4,7 @@ import { RootState } from "../../Store";
 import Sitterchatsidebar from '../../Components/Sitter/Sitterchatsidebar';
 import Sitterchatbubble from '../../Components/Sitter/Sitterchatbubble';
 import useSocket from '../../Components/Socket/Usesocket';
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 interface Parent {
@@ -41,7 +41,7 @@ const Sitterchat: React.FC = () => {
     const fetchChat = async () => {
       if (selectedParent) {
         try {
-          const response = await api.post('/createchat', {
+          const response = await sitterApi.post('/createchat', {
             sitterId: sitterId,
             parentId: selectedParent._id,
           });
@@ -52,7 +52,7 @@ const Sitterchat: React.FC = () => {
           console.log(chatData._id,'id')
           setChatId(chatData._id);
 
-          const messagesResponse = await api.get(`/get-messages/${chatData._id}`);
+          const messagesResponse = await sitterApi.get(`/get-messages/${chatData._id}`);
           console.log(messagesResponse.data.messages,'mes')
           setChatMessages(messagesResponse.data.messages);
 
@@ -129,7 +129,7 @@ const Sitterchat: React.FC = () => {
           formData.append('audio', audio);
         }
 
-        const response = await api.post('/send-message', formData, {
+        const response = await sitterApi.post('/send-message', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -151,7 +151,7 @@ const Sitterchat: React.FC = () => {
 
   const handleMarkSeen = () => {
     if (chatId && sitterId) {
-      api.post('/mark-seen', { chatId, userId: sitterId });
+      sitterApi.post('/mark-seen', { chatId, userId: sitterId });
       if (socket) {
         socket.emit('markSeen', { chatId, userId: sitterId });
       }

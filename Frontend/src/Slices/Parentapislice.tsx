@@ -1,6 +1,6 @@
 import { apiSlice } from "./Apislice";
 
-const PARENT_URL = '/api/parent'
+const PARENT_URL = 'http://localhost:5003/api/parent'
 
 export const Parentapislice = apiSlice.injectEndpoints({
     endpoints:(builder)=>({

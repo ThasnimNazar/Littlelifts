@@ -5,7 +5,7 @@ import axios from "axios"
 import { useToast } from "@chakra-ui/react"
 import { RootState } from "../../../Store"
 import Header from "../../../Header"
-import api from '../../../Axiosconfig'
+import { publicApi } from '../../../Axiosconfig'
 
 
 
@@ -19,7 +19,7 @@ const Forgetpasswordscreen : React.FC = () =>{
     const submitHandler = async(e:React.FormEvent<HTMLFormElement>)=>{
         e.preventDefault()
         try {
-            const response = await api.post('/forget-password', { email });
+            const response = await publicApi.post('/api/parent/forget-password', { email });
            if(response.status === 200){
             toast({
                 title: 'Success',

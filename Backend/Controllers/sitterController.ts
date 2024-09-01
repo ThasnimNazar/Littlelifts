@@ -715,9 +715,15 @@ const getsitterProfile = asyncHandler(async (req: Request<{ sitterId: string }>,
 
         const { sitterId } = req.params;
         const sitter = await Sitter.findById(sitterId)
+        
         console.log(sitter)
         if (!sitter) {
             res.status(404).json({ message: 'sitter not found' })
+            return;
+        }
+
+        if(sitter?.blocked === true){
+            res.status(403).json({message:'Your account is blocked'})
             return;
         }
 
@@ -758,8 +764,9 @@ const sitterLogin = asyncHandler(async (req: Request, res: Response) => {
             await sitter.save();
         }
 
-        if(sitter.blocked){
-            res.status(403).json({message:'your account is blocked'})
+        if(sitter.blocked === true){
+            res.status(403).json({message:'Your account is blocked'})
+            return;
         }
 
         if (sitter.verified === true) {
@@ -795,6 +802,13 @@ const editProfile = async (req: Request<{ sitterId: string }>, res: Response) =>
         await uploadSingleImagePromise(req, res);
 
         const { sitterId } = req.params;
+
+        const sitterBlock = await Sitter.findById(sitterId)
+        if(sitterBlock?.blocked === true){
+            res.status(403).json({message:'Your account is blocked'})
+            return;
+        }
+
         const profileImageUrl = req.file ? (req.file as any).location : undefined;
         console.log(profileImageUrl)
 
@@ -860,6 +874,11 @@ const getSlots = asyncHandler(async (req: Request<{ sitterId: string }>, res: Re
             return;
         }
 
+        if(sitter.blocked === true){
+            res.status(403).json({message:"Your account is blocked"})
+            return;
+        }
+
         if (sitter?.weekendSlots) {
 
             const slots = await WeekendSitting.find({ _id: { $in: sitter.weekendSlots } });
@@ -913,6 +932,11 @@ const geteditSlot = asyncHandler(async (req: Request<{ sitterId: string, slotId:
             res.status(404).json({ message: 'sitter not found' })
         }
 
+        if(sitter?.blocked === true){
+            res.status(403).json({message:"Your account is blocked"})
+            return;
+        }
+
         let slot;
 
         if (sitter?.weekendSlots.includes(slotid)) {
@@ -951,6 +975,11 @@ const editSlot = asyncHandler(async (req: Request<{ sitterId: string }>, res: Re
 
         if (!sitter) {
             res.status(404).json({ message: 'Sitter not found' });
+            return;
+        }
+
+        if(sitter?.blocked === true){
+            res.status(403).json({message:'Your account is blocked'})
             return;
         }
 
@@ -1111,6 +1140,11 @@ const editTimeslot = async (req: Request<{ sitterId: string; slotId: string }>, 
             return res.status(404).json({ message: 'Sitter not found' });
         }
 
+        if(sitter.blocked === true){
+            res.status(403).json({message:"Your account is blocked"})
+            return;
+        }
+
         if (sitter?.weekendSlots) {
             const weekendSlots = await WeekendSitting.findOne({ _id: { $in: sitter.weekendSlots } });
             if (weekendSlots) {
@@ -1209,6 +1243,12 @@ const editTimeslot = async (req: Request<{ sitterId: string; slotId: string }>, 
 const bookingsList = asyncHandler(async (req: Request<{ sitterId: string }>, res: Response) => {
     try {
         const { sitterId } = req.params;
+        const sitter = await Sitter.findById(sitterId)
+
+        if(sitter?.blocked === true){
+            res.status(403).json({message:'Your account is blocked'})
+            return;
+        }
 
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -1246,6 +1286,13 @@ const bookingsList = asyncHandler(async (req: Request<{ sitterId: string }>, res
 const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: Response) => {
     try {
         const { sitterId, parentId } = req.body;
+        const sitter = await Sitter.findById(sitterId)
+
+        if(sitter?.blocked === true){
+            res.status(403).json({message:"Your account is blocked"})
+            return;
+        }
+
         let chat = await Chat.findOne({
             participants: { $all: [sitterId, parentId] }
         });
@@ -1259,7 +1306,7 @@ const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: R
         }
         console.log(chat, 'chat')
 
-        res.status(201).json(chat);
+        res.status(201).json(chat);   
     }
     catch (error) {
         if (error instanceof Error) {
@@ -1404,8 +1451,15 @@ const getReview = asyncHandler(async(req:Request,res:Response)=>{
         const { sitterId }= req.params
         if(!sitterId){
             res.status(404).json({message:'sitterId is required'})
+            return;
         }
         const review = await Review.find({sitter:sitterId}).populate('parent')
+
+        if (!review) {
+            res.status(404).json({ message: 'No reviews found for the given sitterId' })
+            return;
+        }
+
         res.status(200).json({review})
     }
     catch (error) {

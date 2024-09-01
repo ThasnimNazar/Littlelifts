@@ -25,14 +25,12 @@ initializeSocketIO(server);
 
 
 const corsOptions = {
-  origin: 'https://localhost:3000', 
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
-  credentials: true
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  sameSite: 'Lax'
 };
-
-
-app.use(cors(corsOptions));
 
 
 
@@ -44,6 +42,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser())
+app.use(cors(corsOptions));
+
 
 app.use('/api/sitter',sitterroute);    
 app.use('/api/admin',adminroute);

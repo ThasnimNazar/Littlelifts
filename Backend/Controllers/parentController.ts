@@ -39,8 +39,8 @@ interface ParentData {
     selectedchildcategory: string;
 }
 
-interface UpdateData{
- chatId:string;
+interface UpdateData {
+    chatId: string;
 }
 
 interface User {
@@ -116,7 +116,7 @@ const registerParent = asyncHandler(async (req: Request<{}, {}, ParentData>, res
         const parentExist = await Parent.findOne({ email }) as (ParentModel & { _id: Types.ObjectId }) | null;
 
         if (parentExist) {
-            res.status(400).json({ message: 'Parent already exists with the email' });
+            res.status(402).json({ message: 'Parent already exists with this email' });
             return;
         }
 
@@ -129,25 +129,25 @@ const registerParent = asyncHandler(async (req: Request<{}, {}, ParentData>, res
             password: hashedPassword,
             selectedchildcategory,
             role: 'parent'
-            
+
         });
 
         await parent.save();
         console.log(parent, 'pp');
         const role = parent.role;
-        console.log(role,'role')
+        console.log(role, 'role')
 
         await sendOTPVerificationEmail({ id: parent._id, email: parent.email }, res);
 
         const token = generateParentToken(res, parent._id);
-        console.log(token,'kk')
+        console.log(token, 'kk')
         res.status(200).json({
             _id: parent._id,
             name,
             email,
             phoneno: phoneno,
             selectedchildcategory,
-            parentToken:token,
+            token,
             role
         });
     } catch (error) {
@@ -288,7 +288,7 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
         }
 
         if (parentExists.blocked) {
-            res.status(401).json({ message: 'your account is blocked' })
+            res.status(403).json({ message: 'Your account is blocked' })
             return;
         }
 
@@ -300,7 +300,7 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
         }
 
         const token = generateParentToken(res, parentExists._id);
-        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully',parentToken:token,role:parentExists?.role });
+        res.status(200).json({ parent: parentExists, message: 'Parent logged in successfully', parentToken: token, });
     } catch (error) {
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
@@ -310,65 +310,63 @@ const parentLogin = asyncHandler(async (req: Request<{}, {}, LoginData>, res: Re
     }
 });
 
-const listSitter = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+const listSitter = async (req: Request, res: Response): Promise<void> => {
     try {
-        console.log('Received request for listing sitters');
-
-        const page = parseInt(req.query.page as string, 10) || 1;
-        const limit = parseInt(req.query.limit as string, 10) || 10;
-        const skip = (page - 1) * limit;
-        const lat = req.query.lat;
-        const lng = req.query.lng;
-        const radius = req.query.radius;
-
-        if (!lat || !lng || !radius) {
-            res.status(400).json({ message: 'Latitude, longitude, and radius are required.' });
-            return;
+            console.log('Received request for listing sitters');
+    
+            const lat = req.query.lat;
+            const lng = req.query.lng;
+            const radius = req.query.radius;
+    
+            if (!lat || !lng || !radius) {
+                res.status(400).json({ message: 'Latitude, longitude, and radius are required.' });
+                return;
+            }
+    
+            const latitude = parseFloat(lat as string);
+            const longitude = parseFloat(lng as string);
+            const radiusInKm = parseFloat(radius as string);
+    
+            if (radiusInKm <= 0) {
+                res.status(400).json({ message: 'Radius must be a positive number.' });
+                return;
+            }
+    
+            const radiusInRadians = radiusInKm / 6371;
+    
+            console.log('Latitude:', latitude);
+            console.log('Longitude:', longitude);
+            console.log('Radius in km:', radiusInKm);
+            console.log('Radius in radians:', radiusInRadians);
+    
+            const query = {
+                location: {
+                    $geoWithin: {
+                        $centerSphere: [
+                            [longitude, latitude],
+                            radiusInRadians
+                        ]
+                    }
+                },
+                blocked: false
+            };
+    
+            console.log('Query:', JSON.stringify(query));
+    
+            const babysitters = await Sitter.find(query);
+    
+            console.log('Babysitters found:', babysitters);
+    
+        
+            res.status(200).json({ sitters: babysitters});
+    }  catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+        } else {
+            res.status(500).json({ message: 'An unknown error occurred' });
         }
-
-        const latitude = parseFloat(lat as string);
-        const longitude = parseFloat(lng as string);
-        const radiusInKm = parseFloat(radius as string);
-
-        if (radiusInKm <= 0) {
-            res.status(400).json({ message: 'Radius must be a positive number.' });
-            return;
-        }
-
-        const radiusInRadians = radiusInKm / 6371;
-
-        console.log('Latitude:', latitude);
-        console.log('Longitude:', longitude);
-        console.log('Radius in km:', radiusInKm);
-        console.log('Radius in radians:', radiusInRadians);
-
-        const query = {
-            location: {
-                $geoWithin: {
-                    $centerSphere: [
-                        [longitude, latitude],
-                        radiusInRadians
-                    ]
-                }
-            },
-            blocked: false
-        };
-
-        console.log('Query:', JSON.stringify(query));
-
-        const babysitters = await Sitter.find(query);
-
-        console.log('Babysitters found:', babysitters);
-
-        const total = await Sitter.countDocuments(query);
-        console.log('Total sitters found:', total);
-
-        res.status(200).json({ sitters: babysitters, total });
-    } catch (error) {
-        console.error('Error while listing sitters:', error);
-        res.status(500).json({ message: 'An unknown error occurred' });
     }
-});
+};
 
 
 
@@ -377,11 +375,12 @@ const getProfile = asyncHandler(async (req: Request<{ parentId: string }, {}>, r
     try {
         const { parentId } = req.params;
         const parent = await Parent.findById({ _id: parentId })
-        if (parent) {
-            res.status(200).json({ parent })
+        if (parent?.blocked === true) {
+            res.status(403).json({ message: "Your account is blocked" })
+            return;
         }
         else {
-            res.status(404).json({ message: 'failed to fetch parent details' })
+            res.status(200).json({ parent })
         }
     }
     catch (error) {
@@ -397,6 +396,12 @@ const editProfile = asyncHandler(async (req: Request<{ parentId: string }, {}, E
     try {
         await uploadSinglePromise(req, res);
         const { parentId } = req.params;
+        const parentBlock = await Parent.findById({ _id: parentId })
+
+        if (parentBlock?.blocked === true) {
+            res.status(403).json({ message: "Your account is blocked" })
+            return;
+        }
         const { name, phoneno } = req.body;
         const profileImageUrl = (req.file as any).location;
 
@@ -461,6 +466,10 @@ const forgotPassword = asyncHandler(async (req: Request<{ email: string }>, res:
         const email = req.body.email;
         console.log(email, 'eeee')
         const parent = await Parent.findOne({ email })
+        if (parent?.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' })
+            return;
+        }
         if (!parent) {
             res.status(401).json({ message: 'User not found, User authentication failed, Please SignUp again' });
             return;
@@ -488,6 +497,11 @@ const parentpasswordOtp = asyncHandler(async (req: CustomRequest<OtpBody>, res: 
         }
 
         const parentId = req.parent._id;
+        const parentBlock = await Parent.findById({ _id: parentId })
+        if (parentBlock?.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' })
+            return;
+        }
         console.log(parentId)
 
         if (!otp) {
@@ -562,6 +576,11 @@ const resetparentPassword = asyncHandler(async (req: CustomRequest<PasswordBody>
 
         if (!parent) {
             res.status(404).json({ message: 'Parent not found' });
+            return;
+        }
+
+        if (parent.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' })
             return;
         }
 
@@ -794,6 +813,11 @@ const getSlots = async (req: Request<{ sitterId: string }>, res: Response) => {
 const bookingsParent = asyncHandler(async (req: Request<{ parentId: string }>, res: Response) => {
     try {
         const { parentId } = req.params;
+        const parent = await Parent.findById({ _id: parentId })
+        if (parent?.blocked === true) {
+            res.status(403).json({ message: "Your account is blocked" })
+            return;
+        }
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 10;
         const skip = (page - 1) * limit;
@@ -832,6 +856,12 @@ const bookingsParent = asyncHandler(async (req: Request<{ parentId: string }>, r
 const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: Response) => {
     try {
         const { parentId, sitterId } = req.body;
+        const parent = await Parent.findById({ _id: parentId })
+
+        if (parent?.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' })
+        }
+
         let chat = await Chat.findOne({
             participants: { $all: [parentId, sitterId] }
         });
@@ -858,7 +888,7 @@ const createChat = asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: R
 })
 
 
-const sendMessage = asyncHandler(async (req: Request<{}, {}, MessageBody>, res: Response) => {
+const sendMessage = asyncHandler(async (req: CustomRequest<MessageBody>, res: Response) => {
     try {
         await new Promise<void>((resolve, reject) => {
             uploadFields(req, res, (err: any) => {
@@ -870,14 +900,17 @@ const sendMessage = asyncHandler(async (req: Request<{}, {}, MessageBody>, res: 
             });
         });
 
-
+        if (req.parent) {
+            const parent = await Parent.findById({ _id: req.parent._id })
+            if (parent?.blocked === true) {
+                res.status(403).json({ message: "Your account is blocked" })
+            }
+        }
         const { chatId, senderId, content, timestamp } = req.body;
         console.log(req.body, 'jj')
         const imageUrl = req.files && (req.files as any).image ? (req.files as any).image[0].location : '';
         const videoUrl = req.files && (req.files as any).video ? (req.files as any).video[0].location : '';
         const audioUrl = req.files && (req.files as any).audio ? (req.files as any).audio[0].location : '';
-
-
 
         const message = new Message({
             chat: chatId,
@@ -1019,31 +1052,6 @@ const postReview = asyncHandler(async (req: Request, res: Response) => {
     }
 })
 
-const isBlocked = asyncHandler(async (req: Request, res: Response) => {
-    try {
-        const { parentId } = req.query;
-        const parent = await Parent.findById({ _id: parentId })
-        if (!parent) {
-            res.status(404).json({ message: 'parent not found' })
-            return;
-        }
-
-        if (parent.blocked) {
-            res.status(200).json({ parent, message: 'You are blocked' })
-            return;
-
-        }
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error(error.message);
-            res.status(500).json({ message: error.message });
-        } else {
-            console.error('An unknown error occurred');
-            res.status(500).json({ message: 'An unknown error occurred' });
-        }
-    }
-})
 
 const getSubscription = asyncHandler(async (req: Request, res: Response) => {
     try {
@@ -1078,6 +1086,10 @@ const addFavourites = asyncHandler(async (req: Request, res: Response) => {
         const parent = await Parent.findById(parentId)
         if (!parent) {
             res.status(404).json({ message: 'Parent not found' })
+            return;
+        }
+        if (parent.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' })
             return;
         }
 
@@ -1120,9 +1132,17 @@ const addFavourites = asyncHandler(async (req: Request, res: Response) => {
 const getFavourites = asyncHandler(async (req: Request<{ parentId: string }>, res: Response) => {
     try {
         const { parentId } = req.params;
+
+        const parent = await Parent.findById({ _id: parentId })
+        if (parent?.blocked === true) {
+            res.status(403).json({ message: "Your account is blocked" })
+            return;
+        }
+
         const favourites = await Favourites.findOne({ parent: parentId }).populate({ path: 'sitters', select: 'name email phoneno profileImage' })
             .set('strictPopulate', false);
         console.log(favourites, 'favs')
+
         if (!favourites) {
             res.status(400).json({ message: 'no favourites to display' })
             return;
@@ -1147,6 +1167,11 @@ const removeFavourites = asyncHandler(async (req: Request<{ parentId: string }>,
     try {
         const { sitterId } = req.body;
         const { parentId } = req.params;
+        const parent = await Parent.findById(parentId)
+
+        if (parent?.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' })
+        }
         const id = new mongoose.Types.ObjectId(parentId)
         const favourites = await Favourites.findOne({ parent: parentId })
         console.log(favourites, 'll')
@@ -1281,15 +1306,15 @@ const lastSeen = asyncHandler(async (req: Request, res: Response) => {
     }
 })
 
-const getAllreviews = asyncHandler(async(req:Request,res:Response)=>{
-    try{
-      const reviews = await Review.find({}).populate({path:'parent',select:'profileImage name'})
-      if(!reviews){
-        res.status(400).json({message:"reviews not found"})
-        return
-      }
+const getAllreviews = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const reviews = await Review.find({}).populate({ path: 'parent', select: 'profileImage name' })
+        if (!reviews) {
+            res.status(400).json({ message: "reviews not found" })
+            return
+        }
 
-      res.status(200).json({reviews})
+        res.status(200).json({ reviews })
     }
     catch (error) {
         if (error instanceof Error) {
@@ -1302,34 +1327,34 @@ const getAllreviews = asyncHandler(async(req:Request,res:Response)=>{
     }
 })
 
-const updateSeen = async(req:Request<{parentId:string}>,res:Response)=>{
-    try{
+const updateSeen = async (req: Request<{ parentId: string }>, res: Response) => {
+    try {
         const { chatId } = req.query;
         const { parentId } = req.params;
-        console.log(parentId,'parentid-seen')
-        console.log(chatId,'chatidddd')       
+        console.log(parentId, 'parentid-seen')
+        console.log(chatId, 'chatidddd')
 
         if (!parentId || !chatId) {
             return res.status(400).json({ message: 'parentId and chatId are required' });
         }
 
         const unseenMessages = await Message.find({
-            chat: chatId,      
-            seenBy: { $ne: parentId }  
+            chat: chatId,
+            seenBy: { $ne: parentId }
         })
 
-       
+
 
         if (unseenMessages.length === 0) {
             return res.status(200).json({ message: 'No unseen messages' });
-          }
-      
-          for (const message of unseenMessages) {
+        }
+
+        for (const message of unseenMessages) {
             message.seenBy.push(parentId);
-            await message.save();  
-          }
-      
-          res.status(200).json({ message: 'Messages marked as seen' });
+            await message.save();
+        }
+
+        res.status(200).json({ message: 'Messages marked as seen' });
 
 
     }
@@ -1342,13 +1367,13 @@ const updateSeen = async(req:Request<{parentId:string}>,res:Response)=>{
             res.status(500).json({ message: 'An unknown error occurred' });
         }
     }
-}   
+}
 
 
 
 export {
     registerParent, parentLogin, listSitter, getProfile, editProfile, parentLogout, verifyOtp, forgotPassword, parentpasswordOtp,
     resetparentPassword, resendOtp, searchBabysitters, filterBabysittersByDate, getAvailabledates, getName, getSlots,
-    bookingsParent, createChat, sendMessage, getMessages, markSeen, postReview, isBlocked, getSubscription, addFavourites, getFavourites,
-    removeFavourites, getUser, getReviews, updateLastseen, lastSeen, getLastmessage,getAllreviews,updateSeen
+    bookingsParent, createChat, sendMessage, getMessages, markSeen, postReview, getSubscription, addFavourites, getFavourites,
+    removeFavourites, getUser, getReviews, updateLastseen, lastSeen, getLastmessage, getAllreviews, updateSeen
 };

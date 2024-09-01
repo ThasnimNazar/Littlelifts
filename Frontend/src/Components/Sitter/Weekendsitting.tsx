@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { sitterApi } from '../../Axiosconfig'
 import {
     AlertIcon,
     Box,
@@ -211,8 +211,8 @@ const handleSaveDates = async () => {
         const sitterInfoString = localStorage.getItem('sitterInfo');
         if (sitterInfoString) {
             const sitterInfo = JSON.parse(sitterInfoString);
-            const response = await axios.put(
-                `/api/sitter/slot-manage/${sitterInfo._id}/${selectedOptionId}`,
+            const response = await sitterApi.put(
+                `/slot-manage/${sitterInfo._id}/${selectedOptionId}`,
                 {
                     selectedOption: 'Weekend Sitting',
                     slotData,

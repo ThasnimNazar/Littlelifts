@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../Store';
 import { useToast } from '@chakra-ui/react';
 import { format } from 'date-fns';
-import axios from 'axios';
+import { sitterApi } from '../../Axiosconfig'
 
 interface Slot {
   startTime: string;
@@ -23,6 +23,7 @@ const AddSlotModal:React.FC<SlotProps> = ({ startDate, onClose, }) => {
   const sitterId = sitterInfo?._id;
 
 
+
   const handleSlotChange = (index:number, field:keyof Slot, value: string) => {
 
     const newSlots = [...slots];
@@ -36,20 +37,62 @@ const AddSlotModal:React.FC<SlotProps> = ({ startDate, onClose, }) => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
-    for (const slot of slots) {
-      if (new Date(`${format(startDate, 'yyyy-MM-dd')}T${slot.startTime}`) >= new Date(`${format(startDate, 'yyyy-MM-dd')}T${slot.endTime}`)) {
-        toast({
-                title: 'Error',
-                description: 'start should less than end time',
-                status: 'success',
+  
+    const currentDate = new Date();
+    const isToday = format(startDate, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
+  
+    for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        const slotStartTime = new Date(`${format(startDate, 'yyyy-MM-dd')}T${slot.startTime}`);
+        const slotEndTime = new Date(`${format(startDate, 'yyyy-MM-dd')}T${slot.endTime}`);
+  
+        if (isToday && slotStartTime < currentDate) {
+            toast({
+                title: 'Info',
+                description: 'Start time cannot be in the past.',
+                status: 'error',
                 duration: 3000,
                 isClosable: true,
                 position: 'top-right',
             });
-      }
+            return;
+        }
+  
+        if (slotStartTime >= slotEndTime) {
+            toast({
+                title: 'Info',
+                description: 'Start time should be less than end time.',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+                position: 'top-right',
+            });
+            return;
+        }
+  
+        for (let j = 0; j < slots.length; j++) {
+            if (i !== j) {
+                const existingSlot = slots[j];
+                const existingSlotStartTime = new Date(`${format(startDate, 'yyyy-MM-dd')}T${existingSlot.startTime}`);
+                const existingSlotEndTime = new Date(`${format(startDate, 'yyyy-MM-dd')}T${existingSlot.endTime}`);
+                
+                if (
+                    (slotStartTime < existingSlotEndTime && slotEndTime > existingSlotStartTime)
+                ) {
+                    toast({
+                        title: 'Error',
+                        description: 'Overlapping time slots are not allowed.',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                        position: 'top-right',
+                    });
+                    return;
+                }
+            }
+        }
     }
-
+  
     const newSlotData = {
       availableDates: [
         {
@@ -61,34 +104,35 @@ const AddSlotModal:React.FC<SlotProps> = ({ startDate, onClose, }) => {
         }
       ]
     };
-
-    console.log(newSlotData,'slo')
-
+  
     try {
-      const response = await axios.put(`/api/sitter/edit-slot/${sitterId}`, newSlotData);
+      const response = await sitterApi.put(`/edit-slot/${sitterId}`, newSlotData);
       console.log('Slot added:', response.data);
-      if(response.status === 200)
-      toast({
-        title: 'Success',
-        description: 'Slots added successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
-      });
-      onClose();
-    } catch (error) {
-        console.error('Error adding slot:', error);
+      if (response.status === 200) {
         toast({
-          title: 'Error',
-          description: 'Failed to add slots',
-          status: 'error',
+          title: 'Success',
+          description: 'Slots added successfully',
+          status: 'success',
           duration: 3000,
           isClosable: true,
           position: 'top-right',
         });
+        onClose();
       }
-  };
+    } catch (error) {
+      console.error('Error adding slot:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add slots',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
+    }
+};
+
+  
 
   return (
     <div className="fixed z-10 inset-0 overflow-y-auto flex items-center justify-center">

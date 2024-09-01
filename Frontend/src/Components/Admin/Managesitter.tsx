@@ -1,27 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { useToast, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
-import axios from 'axios';
-import api from '../../Axiosconfig';
+import { useToast, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,Flex, Box } from '@chakra-ui/react';
+import { adminApi } from '../../Axiosconfig';
 
-interface Sitter{
-  _id:string;
-  name:string;
-  email:string;
-  phoneno:number;
-  maxchildren:number;
-  workwithpet:string;
-  yearofexperience:number;
-  gender:string;
-  blocked:boolean;
-  verified:boolean;
-  verificationDocuments:string[];
-  servicepay:number;
+interface Sitter {
+  _id: string;
+  name: string;
+  email: string;
+  phoneno: number;
+  maxchildren: number;
+  workwithpet: string;
+  yearofexperience: number;
+  gender: string;
+  blocked: boolean;
+  verified: boolean;
+  verificationDocuments: string[];
+  servicepay: number;
 }
 
-interface SitterBlock{
-  _id:string;
-  name:string;
-  blocked:boolean;
+interface SitterBlock {
+  _id: string;
+  name: string;
+  blocked: boolean;
 }
 
 
@@ -31,13 +30,16 @@ const Managesitter: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedSitter, setSelectedSitter] = useState<Sitter | null>(null);
   const [sitterToBlock, setSitterToBlock] = useState<SitterBlock | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
 
   const toast = useToast();
 
   useEffect(() => {
     const fetchSitters = async () => {
       try {
-        const response = await api.get('/get-sitters');
+        const response = await adminApi.get('/get-sitters');
         console.log(response.data, 'res');
         if (response.data && response.data[0]) {
           setSitters(response.data[0]);
@@ -84,17 +86,17 @@ const Managesitter: React.FC = () => {
   };
 
   const verifySitter = async () => {
-    if (!selectedSitter) return; 
-  
+    if (!selectedSitter) return;
+
     try {
-      await axios.put(`/api/admin/verify/${selectedSitter._id}`);
-  
+      await adminApi.put(`/verify/${selectedSitter._id}`);
+
       setSitters((prevSitters) =>
         prevSitters.map((sitter) =>
           sitter._id === selectedSitter._id ? { ...sitter, verified: true } : sitter
         )
       );
-  
+
       toast({
         title: 'Sitter Verified',
         description: `${selectedSitter.name} has been verified successfully.`,
@@ -103,7 +105,7 @@ const Managesitter: React.FC = () => {
         isClosable: true,
         position: 'top-right',
       });
-  
+
       closeModal();
     } catch (error) {
       toast({
@@ -124,11 +126,11 @@ const Managesitter: React.FC = () => {
 
   const confirmBlockStatus = async () => {
     if (!sitterToBlock) return;
-    
+
     try {
       const updatedStatus = !sitterToBlock.blocked;
-      const endpoint = updatedStatus ? `/api/admin/block-sitter/${sitterToBlock._id}` : `/api/admin/unblock-sitter/${sitterToBlock._id}`;
-      await axios.put(endpoint);
+      const endpoint = updatedStatus ? `/block-sitter/${sitterToBlock._id}` : `/unblock-sitter/${sitterToBlock._id}`;
+      await adminApi.put(endpoint);
 
       setSitters((prevSitters) =>
         prevSitters.map((s) =>
@@ -158,6 +160,24 @@ const Managesitter: React.FC = () => {
     }
   };
 
+  const totalPages = Math.ceil(sitters.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSitters = sitters.slice(startIndex, endIndex);
+
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prevPage => prevPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prevPage => prevPage - 1);
+    }
+  };
+
   return (
     <>
       <div className="shadow-lg rounded-lg overflow-hidden mx-4 md:mx-10 m-20">
@@ -172,7 +192,7 @@ const Managesitter: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white">
-            {sitters.map((sitter, index) => (
+            {paginatedSitters.map((sitter, index) => (
               <tr key={index}>
                 <td className="py-4 px-6 border-b border-gray-200">{sitter.name}</td>
                 <td className="py-4 px-6 border-b border-gray-200 truncate">{sitter.email}</td>
@@ -199,6 +219,18 @@ const Managesitter: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      <Flex justifyContent="space-between" mt={4} alignItems="center">
+      <Button onClick={handlePreviousPage} disabled={currentPage === 1}>
+        Previous
+      </Button>
+      <Box>
+        Page {currentPage} of {Math.ceil(sitters.length / itemsPerPage)}
+      </Box>
+      <Button onClick={handleNextPage} disabled={currentPage === Math.ceil(sitters.length / itemsPerPage)}>
+        Next
+      </Button>
+    </Flex>
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <ModalOverlay />

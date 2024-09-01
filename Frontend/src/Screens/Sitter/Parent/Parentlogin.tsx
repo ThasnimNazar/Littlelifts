@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate,Link } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { useToast } from '@chakra-ui/react'
 import axios from 'axios'
 import Header from '../../../Header'
 import { setParentCredentials } from '../../../Slices/Parentslice'
-import unauthApi from '../../../Unauth';
-
+import { publicApi } from '../../../Axiosconfig'
 
 
 interface FormErrors {
@@ -37,15 +36,15 @@ const Parentlogin: React.FC = () => {
         }
         else {
             try {
-                const res = await unauthApi.post('/parent/login-parent', {
+                const res = await publicApi.post('/api/parent/login-parent', {
                     email, password
                 })
                 console.log(res)
                 const { parentToken } = res.data
-                const { role } = res.data
+                const role  = res.data.parent.role
                 if (res.status === 200) {
                     localStorage.setItem('parentToken',parentToken)
-                    localStorage.setItem('role',role)
+                    localStorage.setItem('parentRole',role)
                     dispatch(setParentCredentials({ ...res.data.parent }));
                     toast({
                         title: 'Success',
@@ -110,7 +109,6 @@ const Parentlogin: React.FC = () => {
                             <a href="#" className="text-xs text-center text-black uppercase">or Register</a>
                             <span className="border-b w-1/5 lg:w-1/4"></span>
                         </div>
-                        <h1 className="px-4 py-3 w-5/6 text-center text-gray-600 font-bold">Sign in with Google</h1>
 
                         <form onSubmit={submitHandler}>
 
@@ -122,7 +120,7 @@ const Parentlogin: React.FC = () => {
                             <div className="mt-4">
                                 <div className="flex justify-between">
                                     <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                                    <a href="/parent/forgetpassword" className="text-xs text-gray-500">Forget Password?</a>
+                                    <Link to="/parent/forgetpassword" className="text-xs text-gray-500">Forget Password?</Link>
                                 </div>
                                 <input className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
                             </div>
@@ -133,7 +131,7 @@ const Parentlogin: React.FC = () => {
                             </div>
                             <div className="mt-4 flex items-center justify-between">
                                 <span className="border-b w-1/5 md:w-1/4"></span>
-                                <a href="#" className="text-xs text-gray-500 uppercase">or sign up</a>
+                                <Link to="/parent/parentregister" className="text-xs text-gray-500 uppercase">or sign up</Link>
                                 <span className="border-b w-1/5 md:w-1/4"></span>
                             </div>
                         </form>

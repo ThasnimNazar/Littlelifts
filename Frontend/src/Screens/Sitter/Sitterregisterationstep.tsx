@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../Header';
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 const activitiesOptions = ['Animations', 'Help with homework', 'Montessori', 'Manual activities'];
@@ -35,7 +35,7 @@ const SitterRegistrationStep: React.FC = () => {
                 const sitterInfo = JSON.parse(sitterInfoString);
                 setSitterId(sitterInfo._id);
 
-                const response = await api.put(`/register-step3/${sitterInfo._id}`, data);
+                const response = await sitterApi.put(`/register-step3/${sitterInfo._id}`, data);
                 console.log(response.data);
                 if (response.status === 200 && response.data.sitter) {
                     localStorage.setItem('sitterInfo', JSON.stringify(response.data.sitter));

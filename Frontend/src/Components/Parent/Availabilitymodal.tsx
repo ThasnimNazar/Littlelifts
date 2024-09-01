@@ -11,7 +11,7 @@ import {
   ModalFooter,
   Button,
 } from '@chakra-ui/react';
-import api from '../../Axiosconfig'
+import { parentApi } from '../../Axiosconfig'
 
 interface AvailabilityCalendarProps {
   isOpen: boolean;
@@ -34,7 +34,7 @@ const AvailabilityCalendar:React.FC<AvailabilityCalendarProps> = ({ isOpen, onCl
     const fetchAvailability = async () => {
       try {
         console.log(babysitterId,'id')
-        const response = await api.get(`/get-availabledates/${babysitterId}`);
+        const response = await parentApi.get(`/get-availabledates/${babysitterId}`);
         console.log(response)
         const { availableDates, offDates } = response.data;
         console.log(availableDates,offDates)

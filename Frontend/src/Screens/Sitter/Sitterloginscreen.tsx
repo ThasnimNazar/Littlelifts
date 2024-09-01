@@ -1,12 +1,12 @@
 import { useState,useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate,Link } from 'react-router-dom'
 import { useToast } from '@chakra-ui/react'
 import { useDispatch,useSelector } from 'react-redux'
 import axios from 'axios'
 import { RootState } from '../../Store'
 import { setSitterCredentials } from '../../Slices/Sitterslice'
 import Header from '../../Header'
-import unauthApi from '../../Unauth'
+import { publicApi  } from '../../Axiosconfig'
 
 
 interface FormErrors {
@@ -39,7 +39,7 @@ const Sitterloginscreen : React.FC = () =>{
       }
       else{
           try{
-              const res = await unauthApi.post('/sitter/login',{
+              const res = await publicApi.post('/api/sitter/login',{
                   email,password
               })
               console.log(res.data.sitter)
@@ -49,7 +49,7 @@ const Sitterloginscreen : React.FC = () =>{
               console.log(res)
               if( res.status=== 200){
                 localStorage.setItem('sitterToken',token)
-                localStorage.setItem('role',role)
+                localStorage.setItem('sitterRole',role)
                   dispatch(setSitterCredentials({ ...res.data.sitter }));     
                   toast({
                       title: 'Success',
@@ -144,7 +144,6 @@ const Sitterloginscreen : React.FC = () =>{
                             <a href="#" className="text-xs text-center text-black uppercase">or Register</a>
                             <span className="border-b w-1/5 lg:w-1/4"></span>
                         </div>
-                        <h1 className="px-4 py-3 w-5/6 text-center text-gray-600 font-bold">Sign in with Google</h1>
 
                         <form onSubmit={submitHandler}>
 
@@ -156,7 +155,7 @@ const Sitterloginscreen : React.FC = () =>{
                             <div className="mt-4">
                                 <div className="flex justify-between">
                                     <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                                    <a href="/sitter/forgetpassword" className="text-xs text-gray-500">Forget Password?</a>
+                                    <Link to="/sitter/forgetpassword" className="text-xs text-gray-500">Forget Password?</Link>
                                 </div>
                                 <input className="bg-white text-black font-semibold text-sm focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none" type="password" value={password}  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
                             </div>
@@ -167,7 +166,7 @@ const Sitterloginscreen : React.FC = () =>{
                             </div>
                             <div className="mt-4 flex items-center justify-between">
                                 <span className="border-b w-1/5 md:w-1/4"></span>
-                                <a href="#" className="text-xs text-gray-500 uppercase">or sign up</a>
+                                <Link to="/sitter/sitterregister1" className="text-xs text-gray-500 uppercase">or sign up</Link>
                                 <span className="border-b w-1/5 md:w-1/4"></span>
                             </div>
                         </form>

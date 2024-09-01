@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { useToast } from '@chakra-ui/react';
 import { RootState } from '../../Store';
 import axios from 'axios';
-// import api from '../../Axiosconfig'
+import { sitterApi } from '../../Axiosconfig'
 
 
 
@@ -45,7 +45,7 @@ const Sitterchatsidebar: React.FC<ChatsidebarProps> = ({ onSelectChat }) => {
   useEffect(() => {
     const getbabySitter = async () => {
       try {
-        const response = await axios.get(`/api/sitter/booked-parents/${sitterId}`) 
+        const response = await sitterApi.get(`/booked-parents/${sitterId}`) 
         const bookedParentsData: ParentResponse[] = response.data.parent;       
         const bookedParents: Parent[] = bookedParentsData.map((parentObj: ParentResponse) => ({
           _id: parentObj.parent._id,

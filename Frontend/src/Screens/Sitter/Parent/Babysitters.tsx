@@ -20,7 +20,7 @@ import Availabilitymodal from '../../../Components/Parent/Availabilitymodal';
 import { FiMail, FiPhone } from 'react-icons/fi';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart } from '@fortawesome/free-regular-svg-icons'
-import api from '../../../Axiosconfig'
+import { parentApi } from '../../../Axiosconfig'
 
 
 
@@ -57,11 +57,12 @@ const Babysitters: React.FC = () => {
   const [childCategories, setChildCategories] = useState<{ _id: string; name: string }[]>([]);
   const [sittingCategories, setSittingCategories] = useState<{ _id: string; name: string }[]>([]);
   const [selectedSitter, setSelectedsitter] = useState<Babysitter | null>(null)
-  const [categoryNames, setCategoryNames] = useState<string[]>([])
-
+  const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
+
+
+
 
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -120,22 +121,16 @@ const Babysitters: React.FC = () => {
       if (parentLocation?.lat && parentLocation?.lng) {
         try {
           console.log("Parent location:", parentLocation);
-          const response = await api.get('/getsitter', {
+          const response = await parentApi.get('/getsitter',{
             params: {
               lat: parentLocation.lat,
               lng: parentLocation.lng,
               radius: 25,
-              page: currentPage,
-              limit: itemsPerPage,
             },
           });
           console.log("Response:", response);
           setBabysitters(response.data.sitters);
           setFilteredBabysitters(response.data.sitters);
-
-          const totalItems = response.data.totalItems;
-          const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
-          setTotalPages(calculatedTotalPages);
 
         } catch (error) {
           handleAxiosError(error);
@@ -146,14 +141,17 @@ const Babysitters: React.FC = () => {
     };
 
     fetchBabysitters();
-  }, [currentPage, itemsPerPage, parentLocation]);
+  }, [parentLocation]);
 
 
-  const handlePageChange = (newPage: number) => {
-    console.log('Page change requested to:', newPage);
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentBabysitters = filteredBabysitters.slice(indexOfFirstItem, indexOfLastItem);
+
+  const totalPages = Math.ceil(filteredBabysitters.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
   };
 
 
@@ -161,10 +159,10 @@ const Babysitters: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const childCategoryResponse = await api.get('/get-childcategory');
+        const childCategoryResponse = await parentApi.get('/get-childcategory');
         setChildCategories(childCategoryResponse.data.category);
 
-        const sittingCategoryResponse = await api.get('/getsittingcat');
+        const sittingCategoryResponse = await parentApi.get('/getsittingcat');
         setSittingCategories(sittingCategoryResponse.data.category);
       } catch (error) {
         handleAxiosError(error);
@@ -185,7 +183,7 @@ const Babysitters: React.FC = () => {
       const ids = selectedBabysitter.childcategory.map(category => category);
       const fetchCategories = async () => {
         try {
-          const categoryResponse = await api.post('/getnames', {
+          const categoryResponse = await parentApi.post('/getnames', {
             ids: ids
           })
           console.log(categoryResponse, 'ggg')
@@ -279,7 +277,7 @@ const Babysitters: React.FC = () => {
 
       console.log('Selected ISO Date:', isoDate);
 
-      const response = await api.get(`/filter-ByDate?selectedDate=${isoDate}`);
+      const response = await parentApi.get(`/filter-ByDate?selectedDate=${isoDate}`);
       setFilteredBabysitters(response.data.babysitters);
       setSelectedDate(Array.isArray(date) ? (date[0] as Date) : (date as Date));
     } catch (error) {
@@ -326,7 +324,7 @@ const Babysitters: React.FC = () => {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await api.get(`/get-user/${parentId}`)
+        const response = await parentApi.get(`/get-user/${parentId}`)
         console.log(response.data.userSubscription, 'sub')
         if (response.data.userSubscription.isPaid === true) {
           console.log('true')
@@ -350,7 +348,7 @@ const Babysitters: React.FC = () => {
     try {
       const isFavourite = favourites[sitterId];
       if (isFavourite) {
-        const response = await api.put(`/remove-favourites/${parentId}`, {
+        const response = await parentApi.put(`/remove-favourites/${parentId}`, {
           sitterId,
         })
         if (response.status === 200) {
@@ -362,7 +360,7 @@ const Babysitters: React.FC = () => {
         }
 
       } else {
-        const response = await api.post(`/add-favourites`, {
+        const response = await parentApi.post(`/add-favourites`, {
           sitterId: sitterId,
           parentId: parentId
         });
@@ -483,7 +481,7 @@ const Babysitters: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4 mt-4">
-                {filteredBabysitters.map((babysitter) => (
+                {currentBabysitters.map((babysitter) => (
                   <div key={babysitter._id} className="border p-4 rounded-lg bg-white shadow">
                     {paiduser &&
                       <FontAwesomeIcon
@@ -532,35 +530,19 @@ const Babysitters: React.FC = () => {
               </div>
             )}
           </div>
-          <div className="flex justify-center mt-4">
-            <button
-              title="previous"
-              type="button"
-              className="inline-flex items-center justify-center w-8 h-8 py-0 border rounded-md shadow"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="w-4">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
-            <span className="mx-2">Page {currentPage} of {totalPages}</span>
-            <button
-              title="next"
-              type="button"
-              className="inline-flex items-center justify-center w-8 h-8 py-0 border rounded-md shadow"
-              onClick={() => {
-                console.log('Next button clicked');
-                handlePageChange(currentPage + 1);
-              }}
-              disabled={currentPage > totalPages || totalPages === 1}
-            >
-              <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="w-4">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
-          </div>
         </div>
+        <div className="pagination">
+          {Array.from({ length: totalPages }, (_, index) => (
+            <button
+              key={index + 1}
+              onClick={() => handlePageChange(index + 1)}
+              className={`page-button ${currentPage === index + 1 ? 'active' : ''}`}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
+
       </div>
 
       <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="sm">

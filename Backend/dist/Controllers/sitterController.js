@@ -512,6 +512,10 @@ const getsitterProfile = (0, express_async_handler_1.default)((req, res) => __aw
             res.status(404).json({ message: 'sitter not found' });
             return;
         }
+        if ((sitter === null || sitter === void 0 ? void 0 : sitter.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+            return;
+        }
         res.status(200).json({ sitter });
     }
     catch (error) {
@@ -544,8 +548,9 @@ const sitterLogin = (0, express_async_handler_1.default)((req, res) => __awaiter
             sitter.role = 'sitter';
             yield sitter.save();
         }
-        if (sitter.blocked) {
-            res.status(403).json({ message: 'your account is blocked' });
+        if (sitter.blocked === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+            return;
         }
         if (sitter.verified === true) {
             const passwordMatch = yield bcryptjs_1.default.compare(password, sitter.password);
@@ -577,6 +582,11 @@ const editProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         yield uploadSingleImagePromise(req, res);
         const { sitterId } = req.params;
+        const sitterBlock = yield sitterModel_1.default.findById(sitterId);
+        if ((sitterBlock === null || sitterBlock === void 0 ? void 0 : sitterBlock.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+            return;
+        }
         const profileImageUrl = req.file ? req.file.location : undefined;
         console.log(profileImageUrl);
         const updateFields = {};
@@ -643,6 +653,10 @@ const getSlots = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
             res.status(404).json({ message: "sitter not found" });
             return;
         }
+        if (sitter.blocked === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         if (sitter === null || sitter === void 0 ? void 0 : sitter.weekendSlots) {
             const slots = yield weekendsittingModel_1.default.find({ _id: { $in: sitter.weekendSlots } });
             console.log(slots);
@@ -686,6 +700,10 @@ const geteditSlot = (0, express_async_handler_1.default)((req, res) => __awaiter
         if (!sitter) {
             res.status(404).json({ message: 'sitter not found' });
         }
+        if ((sitter === null || sitter === void 0 ? void 0 : sitter.blocked) === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         let slot;
         if (sitter === null || sitter === void 0 ? void 0 : sitter.weekendSlots.includes(slotid)) {
             slot = yield weekendsittingModel_1.default.findById(slotid);
@@ -722,6 +740,10 @@ const editSlot = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         const sitter = yield sitterModel_1.default.findById(sitterId);
         if (!sitter) {
             res.status(404).json({ message: 'Sitter not found' });
+            return;
+        }
+        if ((sitter === null || sitter === void 0 ? void 0 : sitter.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
             return;
         }
         let slotsUpdated = false;
@@ -855,6 +877,10 @@ const editTimeslot = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (!sitter) {
             return res.status(404).json({ message: 'Sitter not found' });
         }
+        if (sitter.blocked === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         if (sitter === null || sitter === void 0 ? void 0 : sitter.weekendSlots) {
             const weekendSlots = yield weekendsittingModel_1.default.findOne({ _id: { $in: sitter.weekendSlots } });
             if (weekendSlots) {
@@ -946,6 +972,11 @@ exports.editTimeslot = editTimeslot;
 const bookingsList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { sitterId } = req.params;
+        const sitter = yield sitterModel_1.default.findById(sitterId);
+        if ((sitter === null || sitter === void 0 ? void 0 : sitter.blocked) === true) {
+            res.status(403).json({ message: 'Your account is blocked' });
+            return;
+        }
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
         const skip = (page - 1) * limit;
@@ -981,6 +1012,11 @@ exports.bookingsList = bookingsList;
 const createChat = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { sitterId, parentId } = req.body;
+        const sitter = yield sitterModel_1.default.findById({ sitterId });
+        if ((sitter === null || sitter === void 0 ? void 0 : sitter.blocked) === true) {
+            res.status(403).json({ message: "Your account is blocked" });
+            return;
+        }
         let chat = yield chatModel_1.default.findOne({
             participants: { $all: [sitterId, parentId] }
         });

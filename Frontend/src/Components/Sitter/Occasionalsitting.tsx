@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { AlertIcon, Box, Button, FormControl, FormLabel, Input, Stack, VStack, Alert, Heading, Text, useToast } from '@chakra-ui/react';
 import Calendaroccasional from './Calendaroccasional';
 import Header from '../../Header';
+import { sitterApi } from '../../Axiosconfig'
 
 interface OccasionalSittingProps {
     selectedOptionid: string;
@@ -190,8 +190,8 @@ const Occasionalsitting: React.FC<OccasionalSittingProps> = ({ selectedOptionid 
             const sitterInfoString = localStorage.getItem('sitterInfo');
             if (sitterInfoString) {
                 const sitterInfo = JSON.parse(sitterInfoString);
-                const response = await axios.put(
-                    `/api/sitter/slot-manage/${sitterInfo._id}/${selectedOptionId}`,
+                const response = await sitterApi.put(
+                    `/slot-manage/${sitterInfo._id}/${selectedOptionId}`,
                     {
                         selectedOption: 'Weekend Sitting',
                         slotData,

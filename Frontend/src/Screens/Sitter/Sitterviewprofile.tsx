@@ -5,7 +5,7 @@ import { useToast } from '@chakra-ui/react';
 import { RootState } from '../../Store';
 import { setSitterCredentials } from '../../Slices/Sitterslice';
 import Sitterheader from '../../Layouts/Adminlayouts/Sitter/Sitterheader'
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 interface FormErrors {
   [key: string]: string;
@@ -47,7 +47,7 @@ const Profiledetailcard: React.FC = () => {
   useEffect(() => {
     const fetchCategoryNames = async () => {
       try {
-        const response = await api.get('/get-childcategory');
+        const response = await sitterApi.get('/get-childcategory');
         const categoryData = response.data.category;
 
         const mappedCategories = categoryData.map((category: Category) => category.name);
@@ -181,7 +181,7 @@ const Profiledetailcard: React.FC = () => {
     }
 
     try {
-      const response = await api.put(`/editprofile/${sitterId}`, formData, {
+      const response = await sitterApi.put(`/editprofile/${sitterId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

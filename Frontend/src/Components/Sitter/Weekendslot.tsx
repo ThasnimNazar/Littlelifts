@@ -70,11 +70,24 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
   };
 
   const updateEvents = () => {
-    const formattedEvents = availableDates.flatMap((availableDate) =>
+    const currentDate = new Date();
+    currentDate.setDate(1); 
+  
+    const filteredAvailableDates = availableDates.filter((availableDate) => {
+      const date = new Date(availableDate.date);
+      return date >= currentDate;
+    });
+  
+    const filteredOffDates = offDates.filter((offDate) => {
+      const date = new Date(offDate);
+      return date >= currentDate;
+    });
+  
+    const formattedEvents = filteredAvailableDates.flatMap((availableDate) =>
       availableDate.timeslots.map((timeslot) => {
         const startTimeLocal = convertToLocalTime(timeslot.startTime, userTimeZone);
         const endTimeLocal = convertToLocalTime(timeslot.endTime, userTimeZone);
-
+  
         return {
           id: timeslot._id,
           title: 'Available Slot',
@@ -85,10 +98,10 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
         };
       })
     );
-
-    const formattedOffEvents = offDates.map((offDate) => {
+  
+    const formattedOffEvents = filteredOffDates.map((offDate) => {
       const localDate = new Date(offDate).toLocaleString('en-US', { timeZone: userTimeZone });
-
+  
       return {
         id: `off-${new Date(localDate).getTime()}`,
         title: 'Off',
@@ -98,15 +111,29 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
         color: 'red',
       };
     });
-
+  
     setEvents([...formattedEvents, ...formattedOffEvents]);
   };
+  
 
 
 
 
   const handleDateSelect = (slotInfo: { start: Date; end: Date; }) => {
     const { start } = slotInfo;
+    
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); 
+    
+    if (start < currentDate) {
+      toast({
+        title: "You cannot select a past date.",
+        status: "info",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
   
     const isDateOff = offDates.some((offDate) => {
       const offDateObj = typeof offDate === 'string' ? new Date(offDate) : offDate;
@@ -126,6 +153,7 @@ const Weekendslot: React.FC<WeekendData & OffdatesData> = ({ availableDates, off
     setSelectedDate(start);
     setShowAddSlotModal(true);
   };
+  
   
 
 

@@ -2,7 +2,7 @@ import Header from "./Header";
 import { useEffect, useState } from "react";
 import { useToast } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import api from "./Axiosconfig";
+import { parentApi } from "./Axiosconfig";
 
 interface Subscription {
   _id:string;
@@ -21,7 +21,7 @@ const Subscription: React.FC = () => {
   useEffect(() => {
     const getSubscriptions = async () => {
       try {
-        const response = await api.get("/get-subscriptions");
+        const response = await parentApi.get("/get-subscriptions");
         console.log(response);
 
         const sortedSubscriptions = response.data.subscription.sort((a: Subscription, b: Subscription) => a.price - b.price);
@@ -43,7 +43,7 @@ const Subscription: React.FC = () => {
 
   const submitHandler = async(subscriptionId:string) =>{
     try{
-      const response = await api.post(`/confirm-subscription/${subscriptionId}`)
+      const response = await parentApi.post(`/confirm-subscription/${subscriptionId}`)
       console.log(response) 
       if (response.data.session) {
         toast({

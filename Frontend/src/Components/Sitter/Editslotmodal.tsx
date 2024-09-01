@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../Store';
-import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
+import { sitterApi } from '../../Axiosconfig';
 
 interface Slot {
   _id: string;
@@ -84,7 +84,7 @@ const EditSlotModal:React.FC<EditSlotModalProps> = ({ slot, existingTimeslots, o
       const formattedStartTime = new Date(`${datePart}T${startTime}`);
       const formattedEndTime = new Date(`${datePart}T${endTime}`);
 
-      const response = await axios.put(`/api/sitter/edit-timeslots/${slot._id}/${sitterId}`, {
+      const response = await sitterApi.put(`/edit-timeslots/${slot._id}/${sitterId}`, {
         startTime: formattedStartTime.toISOString(),
         endTime: formattedEndTime.toISOString()
       });

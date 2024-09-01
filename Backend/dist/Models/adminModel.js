@@ -17,7 +17,7 @@ const adminSchema = new mongoose_1.Schema({
     },
     role: {
         type: String,
-        default: 'parent'
+        default: 'admin'
     },
 });
 const Admin = (0, mongoose_1.model)('Admin', adminSchema);

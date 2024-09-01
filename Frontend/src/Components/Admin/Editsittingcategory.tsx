@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import { useToast } from "@chakra-ui/react";
-import api from '../../Axiosconfig';
+import { adminApi } from '../../Axiosconfig';
 
 
 interface FormErrors {
@@ -51,7 +51,7 @@ const Editsittingcategory: React.FC = () => {
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                const response = await axios.get<GetResponse>(`/api/admin/get-sittingdata/${categoryId}`);
+                const response = await adminApi.get<GetResponse>(`/get-sittingdata/${categoryId}`);
                 console.log(response, 'res');
                 setName(response.data.category.name);
                 setDescription(response.data.category.description);
@@ -107,7 +107,7 @@ const Editsittingcategory: React.FC = () => {
                     formData.append("image", image);
                 }
 
-                const response = await api.put<CategoryResponse>(
+                const response = await adminApi.put<CategoryResponse>(
                     `/edit-sittingcategory/${categoryId}`,
                     formData,
                     {

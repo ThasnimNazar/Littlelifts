@@ -5,10 +5,10 @@ import { useToast } from "@chakra-ui/react";
 import axios from "axios";
 import { Types } from 'mongoose'
 import { AxiosError } from 'axios';
-import { useNavigate } from "react-router-dom";
+import { useNavigate,Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../Store";
-// import api from '../../Axiosconfig';
+import { publicApi } from '../../Axiosconfig';
 
 
 
@@ -116,7 +116,7 @@ const Sitterregisterstep1screen: React.FC = () => {
 		}
 		else {
 			try {
-				const res = await axios.post<RegisterResponse>('/api/sitter', {
+				const res = await publicApi.post<RegisterResponse>('/api/sitter', {
 					name, email, phoneno, password, confirmPassword, gender, location: { latitude, longitude }
 				})
 				const response = { ...res }
@@ -126,7 +126,7 @@ const Sitterregisterstep1screen: React.FC = () => {
 				console.log(res, 'kk')
 				if (res.data) {
 					localStorage.setItem('sitterToken',sitterToken)
-					localStorage.setItem('role',role)
+					localStorage.setItem('sitterRole',role)
 					localStorage.setItem('sitterInfo', JSON.stringify(res.data.sitter));
 
 					toast({
@@ -180,7 +180,7 @@ const Sitterregisterstep1screen: React.FC = () => {
 						<h3 className="text-xl font-semibold text-gray-700 text-center" style={{ fontFamily: "Agrandir, Helvetica, Arial, Lucida, sans-serif" }}>Welcome! Register for ur service,complete your first step of registration </h3>
 						<div className="mt-4 flex items-center justify-between">
 							<span className="border-b w-1/5 lg:w-1/4"></span>
-							<a href="#" className="text-xs text-center text-black uppercase">or login with email</a>
+							<Link to="/sitter/sitterlogin" className="text-xs text-center text-black uppercase">or login with email</Link>
 							<span className="border-b w-1/5 lg:w-1/4"></span>
 						</div>
 						<form onSubmit={handleRegisterstep1}>

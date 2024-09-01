@@ -7,8 +7,9 @@ import Notification from "../../../Components/Sitter/Notification";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMessage } from '@fortawesome/free-regular-svg-icons';
 import { useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom';
 import { sitterLogout } from "../../../Slices/Sitterslice";
-import api from '../../../Axiosconfig'
+import { sitterApi } from '../../../Axiosconfig'
 import useSocket from "../../../Components/Socket/Usesocket";
 
 interface Notifications {
@@ -52,7 +53,7 @@ const Sitterheader: React.FC = () => {
       if (!sitterInfo?._id) return;
 
       try {
-        const response = await api.get(`/getprofile/${sitterInfo?._id}`);
+        const response = await sitterApi.get(`/getprofile/${sitterInfo?._id}`);
         setProfileimageurl(response.data.sitter.profileImage);
       } catch (error) {
         toast({
@@ -70,7 +71,9 @@ const Sitterheader: React.FC = () => {
 
   const handlerLogout = async () => {
     try {
-      await api.post('/logout')
+      await sitterApi.post('/logout')
+      localStorage.removeItem('sitterToken')
+      localStorage.removeItem('sitterRole')
       dispatch(sitterLogout())
       navigate('/')
     }
@@ -149,10 +152,10 @@ const Sitterheader: React.FC = () => {
           <>
             <ul className="hidden items-center justify-center gap-6 md:flex">
               <li className="pt-1.5 font-dm text-sm font-medium font-serif text-sky-700">
-                <a href="/sitter/slot">Slot</a>
+                <NavLink to="/sitter/slot">Slot</NavLink>
               </li>
               <li className="pt-1.5 font-dm text-sm font-medium font-serif text-sky-700">
-                <a href="/sitter/viewprofile">Profile</a>
+                <NavLink to="/sitter/viewprofile">Profile</NavLink>
               </li>
             </ul>
             <div className="flex-grow"></div>

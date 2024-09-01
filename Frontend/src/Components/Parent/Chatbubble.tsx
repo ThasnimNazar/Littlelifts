@@ -7,7 +7,7 @@ import useSocket from '../Socket/Usesocket';
 import { format } from 'date-fns';
 import axios from 'axios'
 import { useToast } from '@chakra-ui/react'
-import api from '../../Axiosconfig'
+import { parentApi } from '../../Axiosconfig'
 
 
 interface Message {
@@ -94,7 +94,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ sitter, chatId, chatMessages, o
   useEffect(() => {
     const postLastseen = async () => {
       try {
-        const response = await api.post(`/last-seen/${parentId}`)
+        const response = await parentApi.post(`/last-seen/${parentId}`)
         console.log(response)
       }
       catch (error) {
@@ -141,7 +141,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ sitter, chatId, chatMessages, o
   useEffect(() => {
     const getLastseen = async () => {
       try {
-        const response = await api.get('/get-lastseen', {
+        const response = await parentApi.get('/get-lastseen', {
           params: {
             sitterId
           }
@@ -177,7 +177,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ sitter, chatId, chatMessages, o
     console.log("Chat ID from props:", chatId);
     const updateSeen = async () => {
       try {
-        const response = await api.put(`/update-lastseen/${parentId}?chatId=${id}`);
+        const response = await parentApi.put(`/update-lastseen/${parentId}?chatId=${id}`);
         console.log(response);
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

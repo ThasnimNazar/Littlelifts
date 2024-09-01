@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@chakra-ui/react'
-import api from '../../Axiosconfig';
+import { adminApi } from '../../Axiosconfig';
 
 
 interface FormErrors {
@@ -95,7 +95,7 @@ const Addsubscription: React.FC = () => {
             });
         } else {
             try {
-                const response = await api.post('/add-subscription', {
+                const response = await adminApi.post('/add-subscription', {
                     name,
                     price,
                     features,

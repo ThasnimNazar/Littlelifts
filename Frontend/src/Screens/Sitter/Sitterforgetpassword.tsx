@@ -5,7 +5,7 @@ import { useToast } from '@chakra-ui/react'
 import axios from 'axios'
 import { RootState } from '../../Store'
 import Header from '../../Header'
-import api from '../../Axiosconfig';
+import { publicApi } from '../../Axiosconfig';
 
 
 const Sitterforgetpassword:React.FC = () =>{
@@ -18,7 +18,7 @@ const Sitterforgetpassword:React.FC = () =>{
     const submitHandler = async(e:React.FormEvent<HTMLFormElement>)=>{
         e.preventDefault()
         try{
-         const response = await api.post('/forget-password',{
+         const response = await publicApi.post('/api/sitter/forget-password',{
             email
          })
          console.log(email)

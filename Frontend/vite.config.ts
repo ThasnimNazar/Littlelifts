@@ -14,13 +14,6 @@ export default defineConfig({
       timeout: 50000,
     },
     port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5003',
-        changeOrigin: true,
-      },
-    },
-    
   },
   
 });

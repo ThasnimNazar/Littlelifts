@@ -5,7 +5,7 @@ import { RootState } from "../../Store";
 import Weekendslot from "../../Components/Sitter/Weekendslot";
 import Specialcareslot from "../../Components/Sitter/Specialcareslot";
 import Occasionalslot from "../../Components/Sitter/Occasionalslot";
-import api from '../../Axiosconfig';
+import { sitterApi } from '../../Axiosconfig';
 
 
 interface TimeSlot {
@@ -30,7 +30,7 @@ const Sitterslotscreen: React.FC = () => {
 
             setIsLoading(true);
             try {
-                const response = await api.get(`/get-slots/${sitterInfo._id}`);
+                const response = await sitterApi.get(`/get-slots/${sitterInfo._id}`);
                 console.log(response.data.slots[0].availableDates)
                 console.log(response.data.slots[0].offDates)
                 setAvailableDates(response.data.slots[0].availableDates)
@@ -39,7 +39,7 @@ const Sitterslotscreen: React.FC = () => {
                 console.log(slotsData)
 
                 if (slotsData) {
-                    const categoryResponse = await api.get(`/get-sittingcategory/${slotsData.sittingCategory}`);
+                    const categoryResponse = await sitterApi.get(`/get-sittingcategory/${slotsData.sittingCategory}`);
                     setSelectedSitting(categoryResponse.data.category.name);
                 }
             } catch (error) {

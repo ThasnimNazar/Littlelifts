@@ -9,7 +9,7 @@ import axios from 'axios';
 import Header from '../../../Header';
 import Loader from '../../../Loader';
 import Resendotp from '../../../Components/Parent/Resendotp';
-import api from '../../../Axiosconfig'
+import { publicApi } from '../../../Axiosconfig'
 
 
 const Forgetotpscreen: React.FC = () => {
@@ -30,7 +30,7 @@ const Forgetotpscreen: React.FC = () => {
   const submitHandler = async () => {
     try {
         setIsLoading(true)
-      const response = await api.post('/forget-verifyotp', {
+      const response = await publicApi.post('/api/parent/forget-verifyotp', {
         otp,
       });
 
@@ -78,7 +78,7 @@ const Forgetotpscreen: React.FC = () => {
         status: 'info',
         isClosable: true,
       })
-      await api.post('/resendotp')
+      await publicApi.post('/resendotp')
      toast({
       title: 'resend otp successfully',
       status: 'success',

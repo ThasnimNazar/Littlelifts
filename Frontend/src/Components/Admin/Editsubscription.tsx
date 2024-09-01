@@ -1,8 +1,7 @@
 import { useState,useEffect } from 'react'
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import { useToast } from "@chakra-ui/react";
-import api from '../../Axiosconfig';
+import { adminApi } from '../../Axiosconfig';
 
 
 interface FormErrors {
@@ -41,7 +40,7 @@ const Editsubscription:React.FC = () =>{
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                const response = await api.get(`/get-editsubscriptions/${id}`);
+                const response = await adminApi.get(`/get-editsubscriptions/${id}`);
                 console.log(response, 'res');
                 setName(response.data.subscriptions.name);
                 setDescription(response.data.subscriptions.description);
@@ -105,7 +104,7 @@ const Editsubscription:React.FC = () =>{
             });
         } else {
             try {
-                const response = await axios.put(`/api/admin/edit-subscription/${id}`, {
+                const response = await adminApi.put(`/edit-subscription/${id}`, {
                     name,
                     price,
                     billingcycle,

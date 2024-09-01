@@ -2,7 +2,7 @@ import express from 'express'
 import {
  registerParent,parentLogin,parentLogout,editProfile,getProfile,listSitter,verifyOtp,
  forgotPassword,parentpasswordOtp,resetparentPassword,resendOtp,searchBabysitters,filterBabysittersByDate,
- getAvailabledates,getName,getSlots,bookingsParent,createChat,getMessages,sendMessage, markSeen, postReview,isBlocked, getSubscription,
+ getAvailabledates,getName,getSlots,bookingsParent,createChat,getMessages,sendMessage, markSeen, postReview, getSubscription,
  addFavourites,getFavourites,removeFavourites,getUser,getReviews,updateLastseen, lastSeen, getLastmessage, getAllreviews, updateSeen
 } from '../Controllers/parentController'
 
@@ -25,7 +25,7 @@ parentroute.post('/logout',parentLogout)
 parentroute.get('/profile/:parentId',protectParent,getProfile)
 parentroute.get('/get-childcategory',getAllchildCategory)
 parentroute.get('/get-allreviews',getAllreviews)    
-parentroute.put('/edit-profile/:parentId',protectParent,protectParent,editProfile)
+parentroute.put('/edit-profile/:parentId',protectParent,editProfile)
 parentroute.get('/getsittingcat',protectParent,getAllsittingCategory)
 parentroute.get('/getsitter',listSitter)
 parentroute.post('/webhook', express.raw({ type: 'application/json' }),handleStripeWebhook)
@@ -42,7 +42,6 @@ parentroute.get('/get-messages/:chatId',protectParent,getMessages)
 parentroute.post('/send-message',protectParent,sendMessage)
 // parentroute.post('/mark-seen',protectParent,markSeen)
 parentroute.post('/post-review',protectParent,postReview)
-parentroute.get('/check-block',protectParent,isBlocked)
 parentroute.get('/get-subscriptions',getSubscription)
 parentroute.post('/confirm-subscription/:subscriptionId',protectParent,confirmSubscription)
 parentroute.post('/add-favourites',protectParent,addFavourites)

@@ -1,7 +1,7 @@
 import { useState,useEffect } from 'react'
 import { useToast } from '@chakra-ui/react';
 import axios from 'axios'
-import api from '../../Axiosconfig'
+import { parentApi } from '../../Axiosconfig'
 
 
 interface ReviewProps{
@@ -29,7 +29,7 @@ const Reviewcard:React.FC<ReviewProps> = ({sitterId}) =>{
   useEffect(()=>{
     const getReviews = async() =>{
         try{
-            const response = await api.get(`/get-reviews/${sitterId}`)
+            const response = await parentApi.get(`/get-reviews/${sitterId}`)
             setReview(response.data.review)
         }
         catch (error: unknown) {
@@ -77,13 +77,11 @@ const Reviewcard:React.FC<ReviewProps> = ({sitterId}) =>{
           {review.length > 0 ? (
             review.map((review, index) => (
               <div key={index} className="flex flex-col items-center gap-4">
-                {/* Display the rating */}
                 <span className="flex items-center gap-4 rounded text-sm text-slate-500">
                     <img className="rounded-full" src={review.parent.profileImage}/>
                 <p>{review.comment}</p>
 
                   <span className="flex gap-1 text-amber-400" role="img" aria-label={`Rating: ${review.rating} out of 5 stars`}>
-                    {/* Render stars based on the rating */}
                     {[...Array(5)].map((_, i) => (
                       <svg
                         key={i}

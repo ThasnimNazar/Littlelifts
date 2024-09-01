@@ -5,15 +5,14 @@ import Sidebar from '../../../Components/Admin/Sidebar';
 import Adminheader from '../../../Layouts/Adminlayouts/Adminheader';
 import '../../../Css/Admin/Adminscreen.css'
 import { logout } from '../../../Slices/Adminslice';
-import { useLogoutadminMutation } from '../../../Slices/Adminapislice';
 import '../../../Css/Admin/Dashboard.css'
 import '../../../Css/Admin/Body.css'
+import { adminApi } from '../../../Axiosconfig';
 
 
 
 const Adminscreen: React.FC = () => {
   const navigate = useNavigate();
-  const [logoutApi ] = useLogoutadminMutation()
   const dispatch = useDispatch();
 
 
@@ -43,8 +42,10 @@ const Adminscreen: React.FC = () => {
 
   const handleLogoutClick = async () => {
     try {
-      await logoutApi({}).unwrap();
+      await adminApi.post('/logout')
       dispatch(logout());
+      localStorage.removeItem('adminToken')
+      localStorage.removeItem('adminRole')
       navigate('/admin');
     } catch (error) {
       console.error("Logout failed: ", error);

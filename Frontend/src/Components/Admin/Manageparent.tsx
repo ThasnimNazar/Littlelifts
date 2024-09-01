@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useToast, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
-import api from '../../Axiosconfig';
+import { useToast, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,Flex, Box } from '@chakra-ui/react';
+import { adminApi } from '../../Axiosconfig';
 
 
 interface Parent{
@@ -21,13 +21,16 @@ const ManageParent: React.FC = () => {
   const [parents, setParent] = useState<Parent[]>([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [parentToBlock, setParentToBlock] = useState<ParentBlock | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(3);
 
+ 
   const toast = useToast();
 
   useEffect(() => {
     const fetchSitters = async () => {
       try {
-        const response = await api.get('/get-parent');
+        const response = await adminApi.get('/get-parent');
         console.log(response.data, 'res');
         if (response.data && response.data[0]) {
             setParent(response.data[0]);
@@ -68,7 +71,7 @@ const ManageParent: React.FC = () => {
     try {
       const updatedStatus = !parentToBlock.blocked;
       const endpoint = updatedStatus ? `/block-parent/${parentToBlock._id}` : `/unblock-parent/${parentToBlock._id}`;
-      await api.put(endpoint);
+      await adminApi.put(endpoint);
 
       setParent((prevParent) =>
         prevParent.map((s) =>
@@ -99,6 +102,19 @@ const ManageParent: React.FC = () => {
     }
   };
 
+  const totalPages = Math.ceil(parents.length / itemsPerPage);
+
+  const currentParents = parents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleNextPage = () => {
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  };
+
+
   return (
     <>
       <div className="shadow-lg rounded-lg overflow-hidden mx-4 md:mx-10 m-20">
@@ -112,8 +128,8 @@ const ManageParent: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white">
-            {parents.map((parent, index) => (
-              <tr key={index}>
+            {currentParents.map((parent) => (
+              <tr key={parent._id}>
                 <td className="py-4 px-6 border-b border-gray-200">{parent.name}</td>
                 <td className="py-4 px-6 border-b border-gray-200 truncate">{parent.email}</td>
                 <td className="py-4 px-6 border-b border-gray-200">{parent.phoneno}</td>
@@ -125,12 +141,23 @@ const ManageParent: React.FC = () => {
                     {parent.blocked ? 'Blocked' : 'Active'}
                   </button>
                 </td>
-                
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <Flex justifyContent="space-between" mt={4} alignItems="center">
+          <Button onClick={handlePreviousPage} disabled={currentPage === 1}>
+            Previous
+          </Button>
+          <Box>
+            Page {currentPage} of {totalPages}
+          </Box>
+          <Button onClick={handleNextPage} disabled={currentPage === totalPages}>
+            Next
+          </Button>
+        </Flex>
 
       <Modal isOpen={isConfirmModalOpen} onClose={closeConfirmModal}>
         <ModalOverlay />
