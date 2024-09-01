@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser'
 import { Server } from 'socket.io';
 import { createServer } from 'node:http';
+import path from 'path'
 import http from 'http';
 import cors from 'cors'
 import sitterroute from './Routes/sitterRoute';
@@ -43,6 +44,16 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser())
 app.use(cors(corsOptions));
+
+const currentWorkingDir = path.resolve();
+const parentDir = path.dirname(currentWorkingDir);
+
+const __dirname = path.resolve();
+    app.use(express.static(path.join(parentDir, "/frontend/dist")));
+    
+    app.get("*", (req, res) =>
+    res.sendFile(path.resolve(parentDir, "frontend", "dist", "index.html"))
+  )
 
 
 app.use('/api/sitter',sitterroute);    
