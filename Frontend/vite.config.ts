@@ -8,13 +8,6 @@ export default defineConfig({
   plugins: [react(),
     nodePolyfills()
   ],
- 
-  server: {
-    hmr:{
-      timeout: 50000,
-    },
-    port: 3000,
-  },
   
 });
 
