@@ -22,7 +22,7 @@ const server = http_1.default.createServer(app);
 console.log(server, 'server');
 (0, socket_1.initializeSocketIO)(server);
 const corsOptions = {
-    origin: true,
+    origin: 'http://localhost:5003',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -35,15 +35,12 @@ app.use((req, res, next) => {
 app.use(express_1.default.json({ limit: '50mb' }));
 app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 app.use((0, cookie_parser_1.default)());
+app.use(express_1.default.static(path_1.default.join(__dirname, "../Frontend/dist")));
 app.use((0, cors_1.default)(corsOptions));
-const currentWorkingDir = path_1.default.resolve();
-const parentDir = path_1.default.dirname(currentWorkingDir);
-const __dirname = path_1.default.resolve();
-app.use(express_1.default.static(path_1.default.join(parentDir, "/frontend/dist")));
-app.get("*", (req, res) => res.sendFile(path_1.default.resolve(parentDir, "frontend", "dist", "index.html")));
 app.use('/api/sitter', sitterRoute_1.default);
 app.use('/api/admin', adminRoute_1.default);
 app.use('/api/parent', parentRoute_1.default);
+app.get("*", (req, res) => res.sendFile(path_1.default.resolve(__dirname, "../Frontend/dist", "index.html")));
 app.get('/', (req, res) => {
     res.send('Hello, TypeScript + Node.js + Express!');
 });
