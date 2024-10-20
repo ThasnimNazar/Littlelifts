@@ -1,22 +1,23 @@
 import axios,{ AxiosInstance } from 'axios';
 
 const publicApi = axios.create({
-  baseURL: 'http://localhost:5003',
+  baseURL: `${import.meta.env.VITE_BACKEND_BASE_URL}`,
   withCredentials: true,
 });
 
+
 const adminApi = axios.create({
-  baseURL: 'http://localhost:5003/api/admin',
+  baseURL: `${import.meta.env.VITE_BACKEND_BASE_URL}/api/admin`,
   withCredentials: true,
 });
 
 const parentApi = axios.create({
-  baseURL: 'http://localhost:5003/api/parent',
+  baseURL: `${import.meta.env.VITE_BACKEND_BASE_URL}/api/parent`,
   withCredentials: true,
 });
 
 const sitterApi = axios.create({
-  baseURL: 'http://localhost:5003/api/sitter',
+  baseURL: `${import.meta.env.VITE_BACKEND_BASE_URL}/api/sitter`,
   withCredentials: true,
 });
 

@@ -26,7 +26,7 @@ initializeSocketIO(server);
 
 
 const corsOptions = {
-  origin: 'http://localhost:3000',
+origin: [process.env.CLIENT_SITE_URLS as string],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
