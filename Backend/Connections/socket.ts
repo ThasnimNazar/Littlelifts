@@ -12,7 +12,6 @@ const initializeSocketIO = (server: http.Server) => {
         }
     });
 
-    console.log(io,'ii')
 
     io.on('connection', (socket) => {
         console.log('hey')

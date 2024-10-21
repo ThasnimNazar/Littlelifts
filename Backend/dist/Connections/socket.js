@@ -10,7 +10,6 @@ const initializeSocketIO = (server) => {
             methods: ['GET', 'POST']
         }
     });
-    console.log(io, 'ii');
     io.on('connection', (socket) => {
         console.log('hey');
         console.log('A user connected:', socket.id);

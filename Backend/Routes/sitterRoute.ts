@@ -18,7 +18,6 @@ import { getAllchildCategory,getAllsittingCategory,getName } from '../Controller
 
 
 const sitterroute = express.Router()
-console.log(sitterroute,'route')
 
 sitterroute.post('/',sitterregisterStep1)
 sitterroute.post('/verifyotp',sitterverifyOtp)

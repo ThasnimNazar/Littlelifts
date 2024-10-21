@@ -22,11 +22,11 @@ const server = http_1.default.createServer(app);
 console.log(server, 'server');
 (0, socket_1.initializeSocketIO)(server);
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: [process.env.CLIENT_SITE_URLS, 'http://localhost:5003', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-    sameSite: 'Lax'
+    crossOriginOpenerPolicy: 'same-origin'
 };
 app.use((req, res, next) => {
     console.log(`Incoming request: ${req.method} ${req.url}`);
@@ -35,15 +35,12 @@ app.use((req, res, next) => {
 app.use(express_1.default.json({ limit: '50mb' }));
 app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 app.use((0, cookie_parser_1.default)());
-app.use(express_1.default.static(path_1.default.join(__dirname, "../Frontend/dist")));
 app.use((0, cors_1.default)(corsOptions));
 app.use('/api/sitter', sitterRoute_1.default);
 app.use('/api/admin', adminRoute_1.default);
 app.use('/api/parent', parentRoute_1.default);
+app.use(express_1.default.static(path_1.default.join(__dirname, "../Frontend/dist")));
 app.get("*", (req, res) => res.sendFile(path_1.default.resolve(__dirname, "../Frontend/dist", "index.html")));
-app.get('/', (req, res) => {
-    res.send('Hello, TypeScript + Node.js + Express!');
-});
 server.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });

@@ -21,7 +21,6 @@ connectDB()
 
 
 const server = http.createServer(app);
-console.log(server,'server')  
 initializeSocketIO(server);   
 
 
