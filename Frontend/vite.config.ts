@@ -24,7 +24,7 @@ export default defineConfig({
     nodePolyfills()
   ],
   build: {
-    outDir: 'build',  // Custom output directory
+    outDir: 'dist',  // Custom output directory
   }
 });
 
